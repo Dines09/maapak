@@ -38,14 +38,20 @@
     "grid": "Grid paper",
     "datumXY": "Datum XY",
     "level": "Level",
-    "photoMeasure": "Photo measure"
+    "photoMeasure": "Photo measure",
+    "caliperShort": "Caliper",
+    "protractorShort": "Angle",
+    "circleShort": "Circle",
+    "hexShort": "Hex",
+    "rectShort": "Rect"
   },
   "dock": {
     "label": "Measuring tools",
     "loupe": "Loupe",
     "more": "More",
     "comingSoon": "Coming in later phases",
-    "maxTools": "At most {{n}} rulers on screen"
+    "maxTools": "At most {{n}} rulers on screen",
+    "shapes": "Shapes"
   },
   "action": {
     "rotate90": "Rotate 90°",
@@ -82,7 +88,20 @@
     "area": "Area",
     "total": "Total",
     "segment": "This segment",
-    "segments": "Segments"
+    "segments": "Segments",
+    "meanDiameter": "Mean Ø",
+    "annulus": "Annulus area",
+    "eccentricity": "Eccentricity",
+    "ovality": "Ovality",
+    "rms": "Fit RMS",
+    "circumference": "Circumference",
+    "diagonal": "Diagonal",
+    "angle": "Angle",
+    "supplementary": "Supplementary",
+    "complementary": "Complementary",
+    "reflex": "Reflex",
+    "arm": "Arm length",
+    "side": "Side"
   },
   "kind": {
     "length": "Length",
@@ -105,7 +124,8 @@
   "unitName": {
     "mm": "millimetres",
     "cm": "centimetres",
-    "in": "inches"
+    "in": "inches",
+    "deg": "degrees"
   },
   "conf": {
     "estimate": "Not calibrated",
@@ -397,6 +417,114 @@
     "privacy": {
       "title": "Privacy",
       "body": "No account and no analytics. Calibrations, records and photos are stored only in this browser on this device."
+    },
+    "caliperPrompt": "Read the vernier and type your reading in {{unit}}.",
+    "check": "Check",
+    "show": "Show",
+    "explain": "Main scale {{main}} {{unit}} (last line before the vernier zero) + coinciding vernier line {{line}} × {{lc}} = {{reading}} {{unit}}",
+    "caliper": {
+      "title": "Vernier caliper",
+      "body": "Outside jaws (below the beam) measure OD, length and width; the small inside jaws (above) measure ID of a ring or hole lying flat. Read the main scale just before the vernier zero, then find the vernier line that lines up exactly with a main-scale line: reading = main + line × least count.\nLeast counts: 0.1 mm (10 lines over 9 mm), 0.05 mm (20 over 39 mm), 0.02 mm (50 over 49 mm), 0.001″ (25 over 0.600″).\nThere is no depth rod: a screen cannot measure depth. The digital value always follows the honest-decimals rule, even if the vernier shows 0.02 mm."
     }
+  },
+  "shapes": {
+    "title": "Quick shapes",
+    "later": "Arrives in Phase {{phase}}",
+    "nutBolt": "Nut-Bolt",
+    "hexNut": "Hex nut",
+    "squareNut": "Square nut",
+    "oring": "O-ring",
+    "washer": "Washer",
+    "gasket": "Gasket",
+    "squarePiece": "Square piece",
+    "rectPlate": "Rectangle plate",
+    "rod": "Rod / Pipe"
+  },
+  "wheel": {
+    "label": "Thumb wheel",
+    "hint": "← turn →",
+    "short": "Wheel"
+  },
+  "tol": {
+    "title": "Tolerance for {{label}}",
+    "hint": "Green: inside the limits by more than the uncertainty. Amber: within the uncertainty of a limit (not certain). Red: out.",
+    "nominal": "Nominal",
+    "upper": "upper tolerance",
+    "lower": "lower tolerance",
+    "clear": "Remove tolerance",
+    "limits": "Limits",
+    "pass": "GO",
+    "warn": "CHECK",
+    "fail": "NO-GO"
+  },
+  "rep": {
+    "mean": "mean",
+    "spread": "spread",
+    "clear": "Clear repeats",
+    "added": "Sample {{n}} added — re-place the handles and tap REP again"
+  },
+  "caliper": {
+    "learn": "Learn",
+    "feature": {
+      "OD": "Outside Ø",
+      "ID": "Inside Ø",
+      "W": "Width",
+      "L": "Length"
+    },
+    "lc": {
+      "0_1": "LC 0.1",
+      "0_05": "LC 0.05",
+      "0_02": "LC 0.02",
+      "in": "LC 0.001″"
+    },
+    "skin": {
+      "vernier": "Vernier",
+      "dial": "Dial",
+      "digital": "Digital"
+    }
+  },
+  "protractor": {
+    "mode": {
+      "half": "0–180°",
+      "full": "360°",
+      "twoLine": "Two-line angle"
+    },
+    "snap": {
+      "0": "Snap off",
+      "1": "Snap 1°",
+      "5": "Snap 5°",
+      "15": "Snap 15°",
+      "0_5": "Snap 0.5°"
+    }
+  },
+  "circle": {
+    "mode": {
+      "circle": "Circle",
+      "ring": "Ring / O-ring",
+      "points": "Points fit"
+    },
+    "concentric": "Concentric",
+    "addPoint": "+ Point",
+    "removePoint": "− Point"
+  },
+  "hex": {
+    "toSquare": "Square nut",
+    "toHex": "Hexagon",
+    "rotate30": "Rotate 30°",
+    "rotate45": "Rotate 45°",
+    "unverified": "Spanner table not yet verified against the standard (§18).",
+    "verdict": {
+      "metric": "Verdict: metric spanner",
+      "inch": "Verdict: inch spanner",
+      "unclear": "Metric or inch: too close to tell"
+    }
+  },
+  "rect": {
+    "square": "Square lock"
+  },
+  "polygon": {
+    "add": "+ Vertex",
+    "remove": "− Vertex",
+    "closed": "Closed"
   }
 }

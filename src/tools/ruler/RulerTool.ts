@@ -96,6 +96,7 @@ export class RulerTool extends BaseTool implements ToolInstance {
   readonly tool: RulerKind;
   s: RulerState;
   private drag: DragCtx | null = null;
+  private lastMarker: 'a' | 'b' = 'b';
 
   constructor(state: RulerState) {
     super();
@@ -260,6 +261,7 @@ export class RulerTool extends BaseTool implements ToolInstance {
   }
 
   onDragStart(h: Handle, p: Vec): void {
+    if (h.id === 'a' || h.id === 'b') this.lastMarker = h.id;
     const c0 = this.center();
     this.drag = {
       id: h.id,
@@ -312,6 +314,12 @@ export class RulerTool extends BaseTool implements ToolInstance {
 
   onDragEnd(_h?: Handle): void {
     this.drag = null;
+  }
+
+  wheel(stepMm: number): void {
+    const k = this.lastMarker;
+    this.s[k] = clamp(this.s[k] + stepMm, 0, this.s.length);
+    if (this.s.tool === 'leapfrog' && k === 'a') this.s.zero = this.s.a;
   }
 
   private snapT(t: number): number {

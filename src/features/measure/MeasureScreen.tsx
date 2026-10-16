@@ -31,9 +31,14 @@ import type { ToolId, Vec } from '../../core/types';
 import { edgesToCurrent, makeTransform, usableRect } from '../../core/calibration';
 import { toMm, type LengthUnit } from '../../core/units';
 import { Stage } from '../../render/Stage';
-import type { Handle, ToolInstance } from '../../render/types';
+import type { Handle, Readout, ToolInstance } from '../../render/types';
 import type { BackgroundSpec } from '../../render/background';
-import { TOOL_REGISTRY, createTool, MAX_TOOLS } from '../../tools/registry';
+import { TOOL_REGISTRY, createTool, MAX_TOOLS, QUICK_SHAPES, type QuickShape } from '../../tools/registry';
+import { evaluateTolerance } from '../../core/tolerance';
+import { repeatStats } from '../../core/uncertainty';
+import { extraKey, useExtras } from '../../state/extras';
+import { ToleranceSheet } from '../../app/components/ToleranceSheet';
+import { ThumbWheel } from '../../app/components/ThumbWheel';
 import { useSettings } from '../../state/settings';
 import { useEnv } from '../../state/env';
 import { resolveScale, useCalibration } from '../../state/calibration';
@@ -48,22 +53,22 @@ import { SaveDialog } from '../../app/components/SaveDialog';
 import { Btn, IconBtn, Segmented, Sheet, cx, inputCls, useToast } from '../../app/components/ui';
 import { ToolIcon } from '../../app/components/ToolIcon';
 
-const DOCK: { id: ToolId | 'free'; labelKey: string }[] = [
+type DockId = ToolId | 'shapes';
+
+const DOCK: { id: DockId; labelKey: string }[] = [
   { id: 'ruler', labelKey: 'tool.ruler' },
-  { id: 'gapRuler', labelKey: 'tool.gapRuler' },
-  { id: 'splitRuler', labelKey: 'tool.splitRuler' },
-  { id: 'leapfrog', labelKey: 'tool.leapfrog' },
-  { id: 'free', labelKey: 'tool.free' },
+  { id: 'caliper', labelKey: 'tool.caliperShort' },
+  { id: 'protractor', labelKey: 'tool.protractorShort' },
+  { id: 'circle', labelKey: 'tool.circleShort' },
+  { id: 'hex', labelKey: 'tool.hexShort' },
+  { id: 'rect', labelKey: 'tool.rectShort' },
+  { id: 'shapes', labelKey: 'dock.shapes' },
 ];
+
+const RULER_FAMILY: ToolId[] = ['ruler', 'gapRuler', 'splitRuler', 'leapfrog'];
 
 /** Later-phase tools shown in "More" so the roadmap is visible. */
 const LATER: { id: string; phase: number }[] = [
-  { id: 'caliper', phase: 2 },
-  { id: 'protractor', phase: 2 },
-  { id: 'circle', phase: 2 },
-  { id: 'hex', phase: 2 },
-  { id: 'rect', phase: 2 },
-  { id: 'polygon', phase: 2 },
   { id: 'gasket', phase: 4 },
   { id: 'threadGauge', phase: 4 },
   { id: 'radiusGauge', phase: 4 },
@@ -105,6 +110,9 @@ export function MeasureScreen() {
   const [menu, setMenu] = useState<{ tool: ToolInstance; handle: Handle; pos: Vec } | null>(null);
   const [exact, setExact] = useState<{ tool: ToolInstance; handle: Handle } | null>(null);
   const [tour, setTour] = useState<number | null>(null);
+  const [shapesOpen, setShapesOpen] = useState(false);
+  const [tolTarget, setTolTarget] = useState<{ key: string; readout: Readout } | null>(null);
+  const [wheelOpen, setWheelOpen] = useState(false);
 
   // ---------- stage lifecycle ----------
   useEffect(() => {
@@ -340,7 +348,8 @@ export function MeasureScreen() {
   }, [settings.loaded, settings.onboarded, settings.tourDone, tour]);
 
   // ---------- actions ----------
-  const pickTool = (id: ToolId | 'free') => {
+  /** Dock tap: one tool of that kind replaces the screen (T-square adds rulers instead). */
+  const pickTool = (id: ToolId | 'free', init: Partial<Record<string, unknown>> = {}) => {
     const st = stageRef.current;
     if (!st) return;
     if (id === 'free') {
@@ -354,11 +363,21 @@ export function MeasureScreen() {
       if (r) st.addTool(r);
     } else {
       st.clearTools();
-      const tool = createTool(id, []);
+      const tool = createTool(id, [], init);
       if (tool) st.addTool(tool);
     }
+    setWheelOpen(id === 'caliper');
     commit(st.selected());
     setSel(st.selected());
+  };
+
+  const pickShape = (q: QuickShape) => {
+    if (q.phase) {
+      toast(t('shapes.later', { phase: q.phase }));
+      return;
+    }
+    setShapesOpen(false);
+    pickTool(q.tool, q.init);
   };
 
   const removeSel = () => {
@@ -379,8 +398,26 @@ export function MeasureScreen() {
     commit(sel);
   };
 
+  /** Measurements of the selected tool, with tolerance and repeat & average attached (7.5, 7.7). */
   const openSave = (ms?: ToolMeasurement[]) => {
-    const list = ms ?? stageRef.current?.tools.flatMap((x) => (x === sel ? x.toMeasurements() : [])) ?? [];
+    if (ms) {
+      setSaveMs(ms);
+      return;
+    }
+    const tool = stageRef.current?.selected();
+    const extras = useExtras.getState().map;
+    const list = (tool?.toMeasurements() ?? []).map((m) => {
+      const e = extras[extraKey(tool!.id, m.label)];
+      let out: ToolMeasurement = { ...m };
+      if (e?.repeats?.length) {
+        const r = repeatStats(e.repeats, m.uncertainty, m.kind === 'angle' ? 0 : scale.relCal);
+        if (r) out = { ...out, value: r.mean, uncertainty: r.U, repeats: [...e.repeats] };
+      }
+      if (e?.tol) {
+        out = { ...out, tolerance: { ...e.tol, result: evaluateTolerance(out.value, out.uncertainty, e.tol) } };
+      }
+      return out;
+    });
     setSaveMs(list);
   };
 
@@ -479,7 +516,9 @@ export function MeasureScreen() {
         secondary={settings.secondaryUnits}
         showRaw={settings.showRaw}
         calibrated={scale.calibrated}
+        relCal={scale.relCal}
         onAdd={() => openSave()}
+        onTolerance={(key, readout) => setTolTarget({ key, readout })}
       />
 
       {focus ? (
@@ -497,9 +536,40 @@ export function MeasureScreen() {
         >
           {sel && (
             <div className="flex items-center gap-1 overflow-x-auto px-2 pb-1 [scrollbar-width:none]">
-              <span className="mr-1 shrink-0 rounded-md bg-white/10 px-2 py-1 text-xs font-bold text-slate-200">
-                {t(`tool.${sel.tool}`)}
-              </span>
+              {RULER_FAMILY.includes(sel.tool) ? (
+                <>
+                  {RULER_FAMILY.map((id) => (
+                    <button
+                      key={id}
+                      onClick={() => pickTool(id)}
+                      data-testid={`mode-${id}`}
+                      className={cx(
+                        'shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold',
+                        sel.tool === id && (st?.tools.length ?? 0) === 1
+                          ? 'bg-sky-500 text-white'
+                          : 'bg-white/10 text-slate-100',
+                      )}
+                    >
+                      {t(`tool.${id}`)}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => pickTool('free')}
+                    data-testid="dock-free"
+                    className={cx(
+                      'shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold',
+                      (st?.tools.length ?? 0) > 1 ? 'bg-sky-500 text-white' : 'bg-white/10 text-slate-100',
+                    )}
+                  >
+                    + {t('tool.free')}
+                  </button>
+                  <span className="mx-0.5 h-5 w-px shrink-0 bg-white/20" />
+                </>
+              ) : (
+                <span className="mr-1 shrink-0 rounded-md bg-white/10 px-2 py-1 text-xs font-bold text-slate-200">
+                  {t(`tool.${sel.tool}`)}
+                </span>
+              )}
               {toolActions.map((a) => (
                 <button
                   key={a.id}
@@ -522,6 +592,34 @@ export function MeasureScreen() {
               >
                 <Move size={14} /> {t('action.nudge')}
               </button>
+              {sel.wheel && (
+                <button
+                  onClick={() => setWheelOpen((v) => !v)}
+                  aria-pressed={wheelOpen}
+                  data-testid="wheel-toggle"
+                  className={cx(
+                    'shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold',
+                    wheelOpen ? 'bg-sky-500 text-white' : 'bg-white/10 text-slate-100',
+                  )}
+                >
+                  {t('wheel.short')}
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  const v = !pinned;
+                  setPinned(v);
+                  st?.pinLoupe(v);
+                }}
+                aria-pressed={pinned}
+                aria-label={t('dock.loupe')}
+                className={cx(
+                  'flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold',
+                  pinned ? 'bg-sky-500 text-white' : 'bg-white/10 text-slate-100',
+                )}
+              >
+                <Search size={14} /> {t('dock.loupe')}
+              </button>
               <button
                 onClick={() => setPrecision((v) => !v)}
                 aria-pressed={precision}
@@ -542,6 +640,9 @@ export function MeasureScreen() {
             </div>
           )}
           {nudgeOpen && st && <NudgePad stage={st} onCommit={() => commit(st.selected())} />}
+          {wheelOpen && st && sel?.wheel && (
+            <ThumbWheel onDetents={(n) => st.wheel(n)} onEnd={() => commit(st.selected())} />
+          )}
           <div className="flex items-center justify-between px-1">
             <IconBtn
               label={locked ? t('action.unlock') : t('action.lock')}
@@ -580,37 +681,23 @@ export function MeasureScreen() {
           <nav className="flex items-stretch justify-between gap-0.5 px-1 pt-1" aria-label={t('dock.label')}>
             {DOCK.map((d) => {
               const active =
-                d.id === 'free' ? (st?.tools.length ?? 0) > 1 : st?.tools.length === 1 && sel?.tool === d.id;
+                d.id !== 'shapes' &&
+                (d.id === 'ruler' ? !!sel && RULER_FAMILY.includes(sel.tool) : sel?.tool === d.id);
               return (
                 <button
                   key={d.id}
-                  onClick={() => pickTool(d.id)}
+                  onClick={() => (d.id === 'shapes' ? setShapesOpen(true) : pickTool(d.id))}
                   data-testid={`dock-${d.id}`}
                   className={cx(
-                    'flex min-h-12 flex-1 flex-col items-center justify-center rounded-xl text-[10px] font-semibold',
+                    'flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-xl text-[10px] font-semibold',
                     active ? 'bg-sky-500/90 text-white' : 'text-slate-200 hover:bg-white/10',
                   )}
                 >
                   <ToolIcon id={d.id} />
-                  <span className="mt-0.5 leading-none">{t(d.labelKey)}</span>
+                  <span className="mt-0.5 max-w-full truncate leading-none">{t(d.labelKey)}</span>
                 </button>
               );
             })}
-            <button
-              onClick={() => {
-                const v = !pinned;
-                setPinned(v);
-                st?.pinLoupe(v);
-              }}
-              aria-pressed={pinned}
-              className={cx(
-                'flex min-h-12 flex-1 flex-col items-center justify-center rounded-xl text-[10px] font-semibold',
-                pinned ? 'bg-sky-500/90 text-white' : 'text-slate-200 hover:bg-white/10',
-              )}
-            >
-              <Search size={20} />
-              <span className="mt-0.5 leading-none">{t('dock.loupe')}</span>
-            </button>
             <button
               onClick={() => setMoreOpen(true)}
               className="flex min-h-12 flex-1 flex-col items-center justify-center rounded-xl text-[10px] font-semibold text-slate-200 hover:bg-white/10"
@@ -663,6 +750,24 @@ export function MeasureScreen() {
           >
             <ImageDown size={16} /> {t('action.snapshot')}
           </Btn>
+          <Btn
+            data-testid="more-polygon"
+            onClick={() => {
+              setMoreOpen(false);
+              pickTool('polygon');
+            }}
+          >
+            <ToolIcon id="polygon" size={16} /> {t('tool.polygon')}
+          </Btn>
+          <Btn
+            data-testid="more-twoline"
+            onClick={() => {
+              setMoreOpen(false);
+              pickTool('protractor', { mode: 'twoLine' });
+            }}
+          >
+            <ToolIcon id="protractor" size={16} /> {t('protractor.mode.twoLine')}
+          </Btn>
           <Btn onClick={() => navigate('/calibrate')}>{t('nav.calibrate')}</Btn>
           <Btn onClick={() => navigate('/edges')}>{t('nav.edges')}</Btn>
           <Btn onClick={() => navigate('/records')}>{t('nav.records')}</Btn>
@@ -685,6 +790,32 @@ export function MeasureScreen() {
           ))}
         </div>
       </Sheet>
+
+      <Sheet open={shapesOpen} onClose={() => setShapesOpen(false)} title={t('shapes.title')} testId="shapes">
+        <div className="grid grid-cols-3 gap-2">
+          {QUICK_SHAPES.map((q) => (
+            <button
+              key={q.id}
+              onClick={() => pickShape(q)}
+              data-testid={`shape-${q.id}`}
+              className={cx(
+                'relative flex min-h-20 flex-col items-center justify-center gap-1 rounded-xl bg-slate-800 p-2 text-xs font-semibold',
+                q.phase ? 'text-slate-500' : 'text-slate-100 hover:bg-slate-700',
+              )}
+            >
+              <ToolIcon id={q.icon} size={28} />
+              {t(`shapes.${q.id}`)}
+              {q.phase && (
+                <span className="absolute right-1 top-1 rounded bg-slate-700 px-1 text-[9px] font-bold">
+                  P{q.phase}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </Sheet>
+
+      <ToleranceSheet target={tolTarget} unit={settings.unit} onClose={() => setTolTarget(null)} />
 
       {menu && (
         <HandleMenu

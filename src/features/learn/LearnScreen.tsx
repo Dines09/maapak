@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { navigate } from '../../app/router';
 import { ScreenHeader, Section } from '../../app/components/ui';
 
-const TOPICS = ['accuracy', 'calibration', 'parallax', 'tools', 'shield', 'limits', 'privacy'] as const;
+const TOPICS = ['accuracy', 'calibration', 'parallax', 'tools', 'caliper', 'shield', 'limits', 'privacy'] as const;
 
 export function LearnScreen() {
   const { t } = useTranslation();

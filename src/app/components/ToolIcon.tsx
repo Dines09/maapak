@@ -8,6 +8,7 @@ export function ToolIcon({ id, size = 22 }: { id: string; size?: number }) {
     stroke: 'currentColor',
     strokeWidth: 1.7,
     strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
     'aria-hidden': true,
   };
   switch (id) {
@@ -47,6 +48,67 @@ export function ToolIcon({ id, size = 22 }: { id: string; size?: number }) {
           <rect x="3" y="4" width="18" height="5" rx="1" />
           <rect x="9.5" y="9" width="5" height="12" rx="1" />
           <path d="M6 4v2M9 4v1.5M12 4v2M15 4v1.5M18 4v2" />
+        </svg>
+      );
+    case 'caliper':
+      return (
+        <svg {...p}>
+          <rect x="2" y="7" width="20" height="4" rx="0.8" />
+          <path d="M4 11v9l2-2v-7M12 11v9l-2-2v-7M4 7V3M12 7V4.5M10 11h6v3h-6" />
+        </svg>
+      );
+    case 'protractor':
+      return (
+        <svg {...p}>
+          <path d="M3 18a9 9 0 0 1 18 0z" />
+          <path d="M12 18 18 9M12 15v3M7 13l1 1M17 13l-1 1" />
+        </svg>
+      );
+    case 'circle':
+      return (
+        <svg {...p}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M4 12h16M12 9v6" />
+        </svg>
+      );
+    case 'ring':
+      return (
+        <svg {...p}>
+          <circle cx="12" cy="12" r="8.5" />
+          <circle cx="12" cy="12" r="4.5" />
+        </svg>
+      );
+    case 'hex':
+      return (
+        <svg {...p}>
+          <path d="M7.5 4.2h9L21 12l-4.5 7.8h-9L3 12z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
+    case 'rect':
+      return (
+        <svg {...p}>
+          <rect x="3" y="6" width="18" height="12" rx="1" />
+          <path d="M3 3.5h18M3 2.5v2M21 2.5v2" />
+        </svg>
+      );
+    case 'polygon':
+      return (
+        <svg {...p}>
+          <path d="M4 18 6 6l8-2 6 7-4 8z" />
+          <circle cx="6" cy="6" r="1" />
+          <circle cx="14" cy="4" r="1" />
+          <circle cx="20" cy="11" r="1" />
+        </svg>
+      );
+    case 'shapes':
+      return (
+        <svg {...p}>
+          <path d="M5.5 3h5L13 7.5 10.5 12h-5L3 7.5z" />
+          <circle cx="17" cy="7" r="4" />
+          <rect x="4" y="14" width="7" height="7" rx="1" />
+          <circle cx="17" cy="17.5" r="3.5" />
+          <circle cx="17" cy="17.5" r="1.5" />
         </svg>
       );
     default:

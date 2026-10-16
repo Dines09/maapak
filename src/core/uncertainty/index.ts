@@ -93,3 +93,48 @@ export function decimalsForValue(U: number): number {
   if (!(U > 0)) return 1;
   return Math.min(4, Math.max(0, -Math.floor(Math.log10(U))));
 }
+
+/** Standard uncertainty of one aligned point (one edge, no calibration term), mm. */
+export function pointUncertainty(pxPerMm: number, protector: ScreenProtector, withLoupe = true): number {
+  return lengthUncertainty({ lengthMm: 0, pxPerMm, relCal: 0, screenProtector: protector, withLoupe, edges: 1 })
+    .u;
+}
+
+/**
+ * Expanded uncertainty of an angle defined by arms of length Lᵢ whose end points each carry a standard
+ * point uncertainty u (vertex + two arms, or two 2-point lines): u_θ = u·√(2·Σ 1/Lᵢ²) rad.
+ */
+export function angleUncertaintyDeg(uPointMm: number, armsMm: readonly number[]): number {
+  const s = armsMm.reduce((acc, L) => acc + 1 / Math.max(L, 1e-6) ** 2, 0);
+  const uRad = uPointMm * Math.sqrt(2 * s);
+  return roundUpOneSig(Math.min(180, (2 * uRad * 180) / Math.PI));
+}
+
+export interface RepeatStats {
+  n: number;
+  mean: number;
+  /** max − min */
+  spread: number;
+  /** Sample standard deviation (0 for n < 2). */
+  s: number;
+  /** Expanded uncertainty of the mean. */
+  U: number;
+}
+
+/**
+ * Repeat & average (§7.7). The random part of one reading (U/2 without the calibration term), or the
+ * observed scatter if that is larger, shrinks with √n; the calibration (systematic) part does not.
+ */
+export function repeatStats(samples: readonly number[], singleU: number, relCal: number): RepeatStats | null {
+  const n = samples.length;
+  if (n === 0) return null;
+  const mean = samples.reduce((a, b) => a + b, 0) / n;
+  const spread = Math.max(...samples) - Math.min(...samples);
+  const s = n > 1 ? Math.sqrt(samples.reduce((a, x) => a + (x - mean) ** 2, 0) / (n - 1)) : 0;
+  const uSingle = singleU / 2;
+  const uSys = Math.abs(mean) * relCal;
+  const uRandSingle = Math.sqrt(Math.max(0, uSingle ** 2 - uSys ** 2));
+  const uRand = Math.max(uRandSingle, s);
+  const uMean = Math.sqrt(uRand ** 2 / n + uSys ** 2);
+  return { n, mean, spread, s, U: roundUpOneSig(2 * uMean) };
+}

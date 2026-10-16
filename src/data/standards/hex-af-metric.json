@@ -1,0 +1,26 @@
+{
+  "title": "Hex across-flats (spanner size) for metric nuts and bolts",
+  "unit": "mm",
+  "note": "Starting values from the Maapak spec §18. ISO and DIN differ for M10, M12, M14 and M22. Verify each row against ISO 4032 / ISO 4014 and DIN 934 / DIN 931 before release.",
+  "rows": [
+    { "size": "M3", "af": 5.5, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M4", "af": 7, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M5", "af": 8, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M6", "af": 10, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M8", "af": 13, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M10", "af": 16, "system": "ISO", "source": "Maapak spec §18 (ISO 4032)", "verified": false },
+    { "size": "M10", "af": 17, "system": "DIN", "source": "Maapak spec §18 (DIN 934)", "verified": false },
+    { "size": "M12", "af": 18, "system": "ISO", "source": "Maapak spec §18 (ISO 4032)", "verified": false },
+    { "size": "M12", "af": 19, "system": "DIN", "source": "Maapak spec §18 (DIN 934)", "verified": false },
+    { "size": "M14", "af": 21, "system": "ISO", "source": "Maapak spec §18 (ISO 4032)", "verified": false },
+    { "size": "M14", "af": 22, "system": "DIN", "source": "Maapak spec §18 (DIN 934)", "verified": false },
+    { "size": "M16", "af": 24, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M18", "af": 27, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M20", "af": 30, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M22", "af": 34, "system": "ISO", "source": "Maapak spec §18 (ISO 4032)", "verified": false },
+    { "size": "M22", "af": 32, "system": "DIN", "source": "Maapak spec §18 (DIN 934)", "verified": false },
+    { "size": "M24", "af": 36, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M27", "af": 41, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false },
+    { "size": "M30", "af": 46, "system": "ISO/DIN", "source": "Maapak spec §18 (ISO 4032 / DIN 934)", "verified": false }
+  ]
+}

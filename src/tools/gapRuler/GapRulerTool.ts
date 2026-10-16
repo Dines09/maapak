@@ -84,6 +84,7 @@ export class GapRulerTool extends BaseTool implements ToolInstance {
   readonly tool = 'gapRuler' as const;
   s: GapState;
   private drag: DragCtx | null = null;
+  private lastId: 'rA' | 'rB' | 'a' | 'b' = 'rA';
 
   constructor(state: GapState) {
     super();
@@ -221,6 +222,7 @@ export class GapRulerTool extends BaseTool implements ToolInstance {
   }
 
   onDragStart(h: Handle, p: Vec): void {
+    if (h.id === 'rA' || h.id === 'rB' || h.id === 'a' || h.id === 'b') this.lastId = h.id;
     this.drag = {
       id: h.id,
       p0: p,
@@ -298,6 +300,20 @@ export class GapRulerTool extends BaseTool implements ToolInstance {
 
   onDragEnd(_h?: Handle): void {
     this.drag = null;
+  }
+
+  wheel(stepMm: number): void {
+    const s = this.s;
+    const b = this.env.bounds();
+    if (this.lastId === 'rA' || this.lastId === 'rB') {
+      const key = this.lastId === 'rA' ? 'oA' : 'oB';
+      const next = { ...s, [key]: s[key] + (key === 'oA' ? stepMm : -stepMm) };
+      if (next.oA >= next.oB && this.valid(next, b)) s[key] = next[key];
+      s.primary = 'W';
+    } else {
+      s[this.lastId] += stepMm;
+      s.primary = 'L';
+    }
   }
 
   setExactValue(handleId: string, valueMm: number): boolean {

@@ -23,6 +23,8 @@ function env(over: Partial<ToolEnv> = {}): ToolEnv {
         edges,
       }).U,
     tickSnapMm: () => 0,
+    pointU: () => 0.08,
+    relCal: () => 0.001,
     snapPoints: () => [],
     otherAngles: () => [],
     angleSnap: () => true,

@@ -60,6 +60,22 @@ export interface Readout {
   unit?: ReadoutUnit;
   /** i18n key for a descriptive name ("Length", "Gap"). */
   nameKey?: string;
+  /** Extra lines under the value (e.g. spanner suggestions). */
+  notes?: string[];
+  /** Vernier Learn mode: the value is hidden and the student types the reading (§6.2). */
+  learn?: LearnInfo;
+}
+
+export interface LearnInfo {
+  /** Main-scale reading before the vernier zero (mm or in). */
+  main: number;
+  /** Coinciding vernier line index. */
+  line: number;
+  /** Least count (same unit as main). */
+  leastCount: number;
+  /** Correct reading = main + line × leastCount. */
+  reading: number;
+  unit: 'mm' | 'in';
 }
 
 export interface Path2DLike {
@@ -105,6 +121,10 @@ export interface ToolEnv {
   placeBounds(): RectMm;
   /** Expanded uncertainty for a length along a direction (mm). */
   uncertainty(lengthMm: number, dir: Vec, edges?: number): number;
+  /** Standard uncertainty of a single aligned point (mm), for angles and fits. */
+  pointU(): number;
+  /** Relative calibration uncertainty r_cal. */
+  relCal(): number;
   /** Tick snapping step in mm, or 0 when off. */
   tickSnapMm(): number;
   /** Snap targets from other tools (mm). */
@@ -155,6 +175,8 @@ export interface ToolInstance {
   angle?(): number;
   /** Current alignment point of a handle (loupe focus while dragging). */
   focusOf?(handleId: string): Vec | null;
+  /** Thumb wheel (§6.2, §7.2): move the tool's main adjustable feature by one detent. */
+  wheel?(stepMm: number): void;
 }
 
 export interface ToolDefinition {

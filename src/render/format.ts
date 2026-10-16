@@ -34,3 +34,9 @@ export function fmtArea(mm2: number, Umm2: number, unit: LengthUnit, raw = false
 export function unitLabel(unit: LengthUnit): string {
   return unit === 'in-frac' ? 'in' : unitSymbol(unit);
 }
+
+/** "37.4°" with decimals from U, never more than 0.1° (§6.3). */
+export function fmtAngle(value: number, U: number): string {
+  const d = U > 0 ? Math.min(1, Math.max(0, -Math.floor(Math.log10(U)))) : 1;
+  return `${value.toFixed(d)}°`;
+}

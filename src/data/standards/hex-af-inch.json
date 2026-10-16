@@ -1,0 +1,17 @@
+{
+  "title": "Hex bolt head across-flats for inch bolts",
+  "unit": "in",
+  "note": "Starting values from the Maapak spec §18 (ASME B18.2.1). Verify each row against ASME B18.2.1 before release.",
+  "rows": [
+    { "size": "1/4″", "af": 0.4375, "afLabel": "7/16″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false },
+    { "size": "5/16″", "af": 0.5, "afLabel": "1/2″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false },
+    { "size": "3/8″", "af": 0.5625, "afLabel": "9/16″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false },
+    { "size": "7/16″", "af": 0.625, "afLabel": "5/8″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false },
+    { "size": "1/2″", "af": 0.75, "afLabel": "3/4″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false },
+    { "size": "9/16″", "af": 0.8125, "afLabel": "13/16″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false },
+    { "size": "5/8″", "af": 0.9375, "afLabel": "15/16″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false },
+    { "size": "3/4″", "af": 1.125, "afLabel": "1-1/8″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false },
+    { "size": "7/8″", "af": 1.3125, "afLabel": "1-5/16″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false },
+    { "size": "1″", "af": 1.5, "afLabel": "1-1/2″", "source": "Maapak spec §18 (ASME B18.2.1)", "verified": false }
+  ]
+}

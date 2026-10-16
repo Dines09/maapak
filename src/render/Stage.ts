@@ -3,7 +3,7 @@
 import type { Vec } from '../core/types';
 import type { LengthUnit, FractionDenominator } from '../core/units';
 import { makeTransform, type EdgeInsets, type ScreenTransform, type RectPx } from '../core/calibration';
-import { lengthUncertainty, type ScreenProtector } from '../core/uncertainty';
+import { lengthUncertainty, pointUncertainty, type ScreenProtector } from '../core/uncertainty';
 import { add, dist, normAngle, rad2deg, scale, snapAngle, sub, type RectMm } from '../core/geometry';
 import { inkFor } from '../core/color';
 import type {
@@ -257,6 +257,9 @@ export class Stage {
           screenProtector: this.model.protector,
           edges,
         }).U,
+      pointU: () =>
+        pointUncertainty((this.transform.sx + this.transform.sy) / 2, this.model.protector),
+      relCal: () => this.model.relCal,
       tickSnapMm: () => {
         if (!this.settings.snapTicks) return 0;
         if (this.settings.unit === 'in' || this.settings.unit === 'in-frac') return 25.4 / 16;
@@ -353,6 +356,18 @@ export class Stage {
     tool.fit?.(this.boundsMm());
     this.invalidate(true);
     this.cb.onCommit?.(tool);
+  }
+
+  /** Thumb wheel: one detent = 1 device px or 0.05 mm (§6.2). Returns false if the tool has no wheel. */
+  wheel(detents: number): boolean {
+    const t = this.selected();
+    if (!t?.wheel || this.locked || !this.measuring) return false;
+    const step = this.settings.nudgeStep === 'px' ? 2 / (this.transform.sx + this.transform.sy) : 0.05;
+    t.wheel(detents * step);
+    t.fit?.(this.boundsMm());
+    this.haptic('tick');
+    this.invalidate(true);
+    return true;
   }
 
   /** Rotate the selected tool (buttons / keyboard). */

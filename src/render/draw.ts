@@ -260,3 +260,56 @@ export function drawTag(rc: RenderContext, text: string, atMm: Vec, up: Vec, bg:
   ctx.fillText(text, 0, 0);
   ctx.restore();
 }
+
+/** Build a path through mm points (drawn through the calibrated transform, so per-axis scale holds). */
+export function pathMm(rc: RenderContext, pts: readonly Vec[], closed: boolean): void {
+  const { ctx } = rc;
+  ctx.beginPath();
+  pts.forEach((p, i) => {
+    const q = rc.mmToPx(p);
+    if (i === 0) ctx.moveTo(q[0], q[1]);
+    else ctx.lineTo(q[0], q[1]);
+  });
+  if (closed) ctx.closePath();
+}
+
+export function circlePoints(c: Vec, r: number, segments = 144): Vec[] {
+  const out: Vec[] = [];
+  for (let k = 0; k < segments; k++) {
+    const a = (k / segments) * Math.PI * 2;
+    out.push([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]);
+  }
+  return out;
+}
+
+/** Exact 1-device-px outline with a faint halo for visibility (like marker lines). */
+export function drawOutline(rc: RenderContext, pts: readonly Vec[], closed: boolean, color: string, fill?: string): void {
+  const { ctx } = rc;
+  ctx.save();
+  pathMm(rc, pts, closed);
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill('evenodd');
+  }
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = 0.22;
+  ctx.lineWidth = 5 * rc.dpr;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Small centre crosshair. */
+export function drawCross(rc: RenderContext, c: Vec, color: string, sizeMm = 2.5): void {
+  const { ctx } = rc;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  line(ctx, rc.mmToPx([c[0] - sizeMm, c[1]]), rc.mmToPx([c[0] + sizeMm, c[1]]));
+  line(ctx, rc.mmToPx([c[0], c[1] - sizeMm]), rc.mmToPx([c[0], c[1] + sizeMm]));
+  ctx.stroke();
+  ctx.restore();
+}

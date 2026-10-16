@@ -61,6 +61,8 @@ import { ToleranceSheet } from '../../app/components/ToleranceSheet';
 import { ThumbWheel } from '../../app/components/ThumbWheel';
 import { Btn, IconBtn, Segmented, Sheet, cx, inputCls, useToast } from '../../app/components/ui';
 import { ToolIcon } from '../../app/components/ToolIcon';
+import { BoltWizardSheet } from '../bolt/BoltWizard';
+import { IdentifySheet } from '../identify/IdentifySheet';
 
 type DockId = ToolId | 'shapes' | 'more';
 
@@ -78,17 +80,20 @@ const DOCK: { id: DockId; labelKey: string }[] = [
   { id: 'more', labelKey: 'dock.more' },
 ];
 
-/** Later-phase tools shown in "More" so the roadmap is visible. */
-const LATER: { id: string; phase: number }[] = [
-  { id: 'gasket', phase: 4 },
-  { id: 'threadGauge', phase: 4 },
-  { id: 'radiusGauge', phase: 4 },
-  { id: 'wireGauge', phase: 4 },
-  { id: 'grid', phase: 4 },
-  { id: 'datumXY', phase: 4 },
-  { id: 'level', phase: 4 },
-  { id: 'photoMeasure', phase: 5 },
+/** Specialty tools (§6.5, §6.7, §6.8) in the "More" sheet. */
+const SPECIALTY: { id: ToolId; init?: Record<string, unknown>; labelKey: string; icon: string }[] = [
+  { id: 'threadGauge', labelKey: 'tool.threadGauge', icon: 'threadGauge' },
+  { id: 'wireGauge', labelKey: 'tool.wireGauge', icon: 'wireGauge' },
+  { id: 'radiusGauge', labelKey: 'tool.radiusGauge', icon: 'radiusGauge' },
+  { id: 'gasket', labelKey: 'tool.gasket', icon: 'ring' },
+  { id: 'gasket', init: { mode: 'pcd' }, labelKey: 'tool.pcd', icon: 'circle' },
+  { id: 'datumXY', labelKey: 'tool.datumXY', icon: 'datumXY' },
+  { id: 'grid', labelKey: 'tool.grid', icon: 'grid' },
+  { id: 'polygon', labelKey: 'tool.polygon', icon: 'polygon' },
 ];
+
+/** Later-phase tools shown in "More" so the roadmap is visible. */
+const LATER: { id: string; phase: number }[] = [{ id: 'photoMeasure', phase: 5 }];
 
 export function MeasureScreen() {
   const { t } = useTranslation();
@@ -127,6 +132,8 @@ export function MeasureScreen() {
   const [exact, setExact] = useState<{ tool: ToolInstance; handle: Handle } | null>(null);
   const [tour, setTour] = useState<number | null>(null);
   const [shapesOpen, setShapesOpen] = useState(false);
+  const [boltOpen, setBoltOpen] = useState(false);
+  const [idOpen, setIdOpen] = useState(false);
   const [tolTarget, setTolTarget] = useState<{ key: string; readout: Readout } | null>(null);
   const [wheelOpen, setWheelOpen] = useState(false);
   const route = useRoute();
@@ -396,6 +403,24 @@ export function MeasureScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intoId, stepIdx]);
 
+  // Template / Match mode (§7.9): a saved record's outline at 1:1 with a tolerance band.
+  const templateId = route.query.get('template');
+  useEffect(() => {
+    if (!templateId) return;
+    let cancelled = false;
+    void Promise.all([getRecord(templateId), stageRef.current?.ready, import('../drawing/model')]).then(
+      ([r, , m]) => {
+        if (cancelled || !r) return;
+        const v = m.recordViews(r)[0];
+        if (v) pickTool('template', { outline: v.view.outline, name: r.name });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateId]);
+
   // ---------- actions ----------
   const pickTool = (id: ToolId, init: Partial<Record<string, unknown>> = {}) => {
     const st = stageRef.current;
@@ -414,6 +439,10 @@ export function MeasureScreen() {
       return;
     }
     setShapesOpen(false);
+    if (q.id === 'nutBolt') {
+      setBoltOpen(true);
+      return;
+    }
     pickTool(q.tool, q.init);
   };
 
@@ -469,7 +498,11 @@ export function MeasureScreen() {
       );
       void saveRecord(rec).then(() => {
         toast(t('save.saved', { name: rec.name }));
-        navigate(`/records/${rec.id}`, true);
+        // Bolt Wizard: walk straight on to the next open step, then show the result card.
+        const next = rec.bolt
+          ? recipeProgress(rec).findIndex(({ step, done }) => !done && !!TOOL_REGISTRY[step.tool])
+          : -1;
+        navigate(next >= 0 ? `/?into=${rec.id}&step=${next}` : `/records/${rec.id}`, true);
       });
       return;
     }
@@ -734,6 +767,14 @@ export function MeasureScreen() {
               >
                 <SlidersHorizontal size={19} />
               </RailBtn>
+              <RailBtn
+                label={t('identify.title')}
+                disabled={!sel}
+                onClick={() => setIdOpen(true)}
+                testId="rail-identify"
+              >
+                <ToolIcon id="identify" size={19} />
+              </RailBtn>
               <RailBtn label={t('action.focus')} onClick={() => setFocus(true)}>
                 <Focus size={19} />
               </RailBtn>
@@ -886,16 +927,30 @@ export function MeasureScreen() {
       <HistorySheet open={historyOpen} onClose={() => setHistoryOpen(false)} onAdd={(m) => openSave([m])} />
 
       <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title={t('dock.more')}>
-        <div className="grid grid-cols-2 gap-2">
-          <Btn
-            data-testid="more-polygon"
-            onClick={() => {
-              setMoreOpen(false);
-              pickTool('polygon');
-            }}
-          >
-            <ToolIcon id="polygon" size={16} /> {t('tool.polygon')}
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          {SPECIALTY.map((x) => (
+            <Btn
+              key={x.labelKey}
+              data-testid={`more-${x.labelKey.slice(5)}`}
+              onClick={() => {
+                setMoreOpen(false);
+                pickTool(x.id, x.init);
+              }}
+            >
+              <ToolIcon id={x.icon} size={16} /> {t(x.labelKey)}
+            </Btn>
+          ))}
+          <Btn data-testid="more-bolt" onClick={() => (setMoreOpen(false), setBoltOpen(true))}>
+            <ToolIcon id="bolt" size={16} /> {t('bolt.title')}
           </Btn>
+          <Btn data-testid="more-level" onClick={() => navigate('/level')}>
+            <ToolIcon id="level" size={16} /> {t('tool.level')}
+          </Btn>
+          <Btn data-testid="more-identify" onClick={() => (setMoreOpen(false), setIdOpen(true))}>
+            <ToolIcon id="identify" size={16} /> {t('identify.title')}
+          </Btn>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
           <Btn
             data-testid="more-twoline"
             onClick={() => {
@@ -943,6 +998,13 @@ export function MeasureScreen() {
           ))}
         </div>
       </Sheet>
+
+      <BoltWizardSheet open={boltOpen} onClose={() => setBoltOpen(false)} />
+      <IdentifySheet
+        open={idOpen}
+        onClose={() => setIdOpen(false)}
+        readouts={idOpen ? useLive.getState().readouts : []}
+      />
 
       <Sheet open={shapesOpen} onClose={() => setShapesOpen(false)} title={t('shapes.title')} testId="shapes">
         <div className="grid grid-cols-3 gap-2">

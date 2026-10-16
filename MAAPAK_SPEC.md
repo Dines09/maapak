@@ -832,12 +832,12 @@ Reference set: ID-1 card, 150 mm steel rule, known coins, M6/M8/M10 bolts and nu
 - [x] Backup/restore; Hindi strings complete
 
 ### Phase 4 — Specialty & sensors
-- [ ] Bolt Wizard, thread pitch gauge, metric-vs-inch detector (§6.6.2, §6.8.1)
-- [ ] O-ring finder, washer finder, Part Identifier (§6.4, §6.10) — sourced data only
-- [ ] Gasket builder & PCD finder, arc fit (§6.5)
-- [ ] Radius gauge, wire gauge, grid, Datum XY, Leapfrog (§6.7, §6.8)
-- [ ] Level & inclinometer with reversal calibration (§6.9)
-- [ ] Template/Match mode (§7.9), DXF export
+- [x] Bolt Wizard, thread pitch gauge, metric-vs-inch detector (§6.6.2, §6.8.1)
+- [x] O-ring finder, washer finder, Part Identifier (§6.4, §6.10) — sourced data only (O-ring ID and washer tables not sourced yet)
+- [x] Gasket builder & PCD finder, arc fit (§6.5)
+- [x] Radius gauge, wire gauge, grid, Datum XY, Leapfrog (§6.7, §6.8)
+- [x] Level & inclinometer with reversal calibration (§6.9)
+- [x] Template/Match mode (§7.9), DXF export
 
 ### Phase 5 — World-class extras
 - [ ] Photo-based measurement with card/A4/printable ArUco mat, magnetic edges (§13)

@@ -214,6 +214,7 @@ export function ReadoutHud(p: HudProps) {
     }
   }
   const others = shown.filter((r) => r !== primary);
+  const notes = [...new Set(shown.flatMap((r) => r.notes ?? []))];
   const lu = learn?.unit ?? 'mm';
   const hidden = !!learn && verdict === null;
 
@@ -246,7 +247,7 @@ export function ReadoutHud(p: HudProps) {
           {hidden ? '?' : valueText}
           {unitText && <span className="ml-0.5 text-sm font-semibold text-slate-300">{unitText}</span>}
         </span>
-        {primary.unit !== 'count' && (
+        {primary.unit !== 'count' && primary.uncertainty > 0 && (
           <span
             className={cx(
               'tabular text-[11px] font-bold',
@@ -347,9 +348,9 @@ export function ReadoutHud(p: HudProps) {
               ))}
             </div>
           )}
-          {primary.notes && primary.notes.length > 0 && (
+          {notes.length > 0 && (
             <ul className="mt-1 space-y-0.5 text-[12.5px] text-slate-200" data-testid="hud-notes">
-              {primary.notes.map((n) => (
+              {notes.map((n) => (
                 <li key={n}>{n}</li>
               ))}
             </ul>

@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.5.0 — Phase 4: specialty tools and sensors (2026-10-16)
+
+- **Thread gauge (§6.8.1)**
+  - Crest-count mode: two lines N pitches apart give P = span / N, with presets for N = 5 to 25 and N ±1 buttons.
+  - Comb mode: a saw-tooth overlay with metric pitch and TPI presets.
+  - Metric-vs-inch detector: the measured pitch is compared to both families and the best fit is reported.
+- **Wire gauge (§6.8.3).** Conductor Ø gives AWG (formula), SWG (table), mm² and the nearest common cable size. A note explains that stranded wire reads larger.
+- **Radius gauge (§6.8.2).** Concave and convex templates with R1 to R20 presets, or a 3-point arc fit. The fit uncertainty grows as the arc gets shorter, and the arc span is shown.
+- **Grid paper (§6.8.4).** True-scale 1 / 5 / 10 mm, 1/8″ and 1/4″ grids; drag anywhere to move the origin.
+- **Datum XY (§6.7).** Origin plus an X axis along a datum edge (snaps to 90°). Feature points give an X/Y table that is saved and exported.
+- **Gasket builder & PCD finder (§6.5)**
+  - Builder: a circle, rectangle or obround outer profile, a bore, and an even hole pattern on a PCD (3× to 12× presets).
+  - PCD finder: circles placed on the real holes give a least-squares PCD, N, angular pitch, hole Ø and each hole's deviation from an even pattern.
+- **Bolt Wizard (§6.6.2)**
+  - Pick the head type: hex, socket cap, countersunk, button, pan or carriage.
+  - The wizard then walks through length → shank Ø → AF → head height → pitch, saving each step to one "Bolt-NN" record.
+  - The result card reads like "M8 × 1.25 × 40 — Hex head bolt, 13 mm AF", with confidence, a metric/inch verdict, alternatives and a matching nut. Washer data is marked as not yet sourced.
+  - An automatic front + top bolt drawing, plus a side ghost for the camera.
+- **"What is this?" (§6.10).** A rail button checks the selected tool's readouts against every sourced table: nuts, threads, pitch, O-ring CS, wire and drills. Matches are listed with Δ and confidence.
+- **Finder notes.** Circle points mode shows the arc span and fit uncertainty. O-ring rings show the nearest AS568 / metric cross-sections. The rod preset shows the nearest drills.
+- **Level & inclinometer (§6.9)**
+  - A bullseye for surfaces and a tube / angle finder for edges.
+  - Readouts in degrees, %, mm/m and 1:x.
+  - Hold, relative zero, two-position reversal calibration, editable slope presets, and a sound / haptic cue on target.
+  - Sensor fusion: DeviceMotion gravity, with the sign checked against DeviceOrientation and a gyro complementary filter that learns the sign. The median smoothing is used only while the phone is steady. The iOS permission button is included.
+- **Template / Match mode (§7.9).** "Match on screen" in a record's export sheet overlays its outline at 1:1 with a ±0.1 to ±2 mm tolerance band. The template can be moved and rotated.
+- **DXF export (§12).** R12 ASCII, 1:1 in mm, with OUTLINE / CENTER / DIM layers.
+- **Fixes**
+  - The save dialog's async default name no longer overwrites a name the user has already typed.
+  - The HUD hides ±0 for set values such as grid spacing.
+
 ## 0.4.0 — Phase 3: records, camera, drawing, export (2026-10-16)
 
 - **Records (§9)**

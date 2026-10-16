@@ -22,6 +22,7 @@ export type ToolId =
   | 'grid'
   | 'level'
   | 'box'
+  | 'template'
   | 'calLines';
 
 export type FeatureKind =
@@ -91,6 +92,8 @@ export interface PartRecord {
   measuredBy?: string;
   recipe?: 'bolt' | 'nut' | 'oring' | 'washer' | 'gasket' | 'rect' | 'custom';
   identification?: { label: string; standard?: string; confidence: number }[];
+  /** Bolt Wizard (§6.6.2): head type picked at the start. */
+  bolt?: { head: 'hex' | 'socket' | 'countersunk' | 'button' | 'pan' | 'carriage' };
   measurements: Measurement[];
   photos: PhotoRef[];
   drawing: { projection: 'first' | 'third'; views: ('front' | 'top' | 'side')[] };

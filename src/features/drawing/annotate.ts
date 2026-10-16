@@ -33,7 +33,9 @@ export function annotatedPhotoSvg(
   unit: LengthUnit,
   den: FractionDenominator,
 ): string {
-  const views = recordViews(rec);
+  const all = recordViews(rec);
+  // Bolt records carry a front and a top view: overlay the one matching the photo.
+  const views = [all.find((v) => v.title === (photo.view === 'side' ? 'front' : photo.view)) ?? all[0]];
   let overlay = '';
   if (photo.ghostToPhoto && views[0]) {
     const k = Math.hypot(photo.ghostToPhoto[0], photo.ghostToPhoto[3]) || 1; // px per mm

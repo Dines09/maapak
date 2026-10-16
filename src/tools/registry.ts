@@ -20,6 +20,12 @@ import { HexTool, defaultHexState, isHexState } from './hex/HexTool';
 import { RectTool, defaultRectState, isRectState } from './rect/RectTool';
 import { PolygonTool, defaultPolygonState, isPolygonState } from './polygon/PolygonTool';
 import { BoxTool, defaultBoxState, isBoxState } from './box/BoxTool';
+import { RadiusTool, defaultRadiusState, isRadiusState } from './radius/RadiusTool';
+import { GridTool, defaultGridState, isGridState } from './grid/GridTool';
+import { DatumTool, defaultDatumState, isDatumState } from './datum/DatumTool';
+import { GasketTool, defaultGasketState, isGasketState } from './gasket/GasketTool';
+import { TemplateTool, defaultTemplateState, isTemplateState } from './template/TemplateTool';
+import type { Entity } from '../render/types';
 
 type Init = Partial<Record<string, unknown>> | undefined;
 const num = (init: Init, k: string, d: number) => Number(init?.[k] ?? d);
@@ -47,6 +53,45 @@ function guarded<T>(ok: (x: unknown) => x is T, make: (s: T) => ToolInstance) {
 export const TOOL_REGISTRY: Partial<Record<ToolId, ToolDefinition>> = {
   ruler: rulerDef('ruler', 'ruler', 'tool.ruler'),
   leapfrog: rulerDef('leapfrog', 'leapfrog', 'tool.leapfrog'),
+  threadGauge: rulerDef('threadGauge', 'threadGauge', 'tool.threadGauge'),
+  wireGauge: rulerDef('wireGauge', 'wireGauge', 'tool.wireGauge'),
+  radiusGauge: {
+    tool: 'radiusGauge',
+    icon: 'radiusGauge',
+    labelKey: 'tool.radiusGauge',
+    create: (init) => new RadiusTool(defaultRadiusState(num(init, 'n', 1))),
+    deserialize: guarded(isRadiusState, (s) => new RadiusTool(s)),
+  },
+  grid: {
+    tool: 'grid',
+    icon: 'grid',
+    labelKey: 'tool.grid',
+    create: (init) => new GridTool(defaultGridState(num(init, 'n', 1))),
+    deserialize: guarded(isGridState, (s) => new GridTool(s)),
+  },
+  gasket: {
+    tool: 'gasket',
+    icon: 'ring',
+    labelKey: 'tool.gasket',
+    create: (init) =>
+      new GasketTool(defaultGasketState(num(init, 'n', 1), init?.mode === 'pcd' ? 'pcd' : 'builder')),
+    deserialize: guarded(isGasketState, (s) => new GasketTool(s)),
+  },
+  template: {
+    tool: 'template',
+    icon: 'shapes',
+    labelKey: 'tool.template',
+    create: (init) =>
+      new TemplateTool(defaultTemplateState((init?.outline as Entity[]) ?? [], String(init?.name ?? ''))),
+    deserialize: guarded(isTemplateState, (s) => new TemplateTool(s)),
+  },
+  datumXY: {
+    tool: 'datumXY',
+    icon: 'datumXY',
+    labelKey: 'tool.datumXY',
+    create: (init) => new DatumTool(defaultDatumState(num(init, 'n', 1))),
+    deserialize: guarded(isDatumState, (s) => new DatumTool(s)),
+  },
   box: {
     tool: 'box',
     icon: 'box',
@@ -141,12 +186,13 @@ export interface QuickShape {
 }
 
 export const QUICK_SHAPES: QuickShape[] = [
-  { id: 'nutBolt', tool: 'hex', init: {}, icon: 'hex', phase: 4 },
+  { id: 'nutBolt', tool: 'hex', init: {}, icon: 'bolt' },
   { id: 'hexNut', tool: 'hex', init: {}, icon: 'hex' },
   { id: 'squareNut', tool: 'hex', init: { mode: 'square' }, icon: 'rect' },
   { id: 'oring', tool: 'circle', init: { mode: 'ring', preset: 'oring' }, icon: 'ring' },
   { id: 'washer', tool: 'circle', init: { mode: 'ring', preset: 'washer' }, icon: 'ring' },
-  { id: 'gasket', tool: 'circle', init: { mode: 'ring' }, icon: 'ring', phase: 4 },
+  { id: 'gasket', tool: 'gasket', init: {}, icon: 'ring' },
+  { id: 'pcd', tool: 'gasket', init: { mode: 'pcd' }, icon: 'circle' },
   { id: 'squarePiece', tool: 'rect', init: { square: true }, icon: 'rect' },
   { id: 'rectPlate', tool: 'rect', init: {}, icon: 'rect' },
   { id: 'rod', tool: 'circle', init: { mode: 'circle', preset: 'rod' }, icon: 'circle' },

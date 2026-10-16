@@ -19,6 +19,7 @@ import { Btn, Field, ScreenHeader, Sheet, inputCls, cx, useToast } from '../../a
 import { fmtReadout, fmtU, fmtUFor } from '../../app/components/ReadoutHud';
 import { addPhoto, deleteRecord, duplicateRecord, getRecord, photoUrl, saveRecord } from './repo';
 import { recordViews } from '../drawing/model';
+import { BoltCard } from '../bolt/BoltWizard';
 import { drawingSvg } from '../drawing/svg';
 import { annotatedPhotoSvg } from '../drawing/annotate';
 import { RECIPES, recipeProgress, type RecipeId } from './recipes';
@@ -140,6 +141,14 @@ export function RecordDetailScreen({ id }: { id: string }) {
           new Blob([await recordToJson(rec)], { type: 'application/json' }),
           `${base}.maapak.json`,
         );
+      } else if (what === 'dxf') {
+        const { recordDxf } = await import('../export/dxf');
+        await shareOrDownload(
+          new Blob([recordDxf(views, unit, den)], { type: 'application/dxf' }),
+          `${base}.dxf`,
+        );
+      } else if (what === 'match') {
+        navigate(`/?template=${rec.id}`);
       } else if (what === 'template-svg' || what === 'template-pdf') {
         const { templateSvg, templatePdf } = await import('../export/sheets');
         const svg = templateSvg(rec, { unit, den }, t('export.printNote'));
@@ -267,6 +276,8 @@ export function RecordDetailScreen({ id }: { id: string }) {
             {rec.notes && <p className="mt-2 whitespace-pre-wrap text-slate-400">{rec.notes}</p>}
           </div>
         )}
+
+        <BoltCard rec={rec} unit={unit} />
 
         {progress.length > 0 && (
           <section className="mb-3 rounded-2xl bg-slate-800/60 p-3" data-testid="recipe">
@@ -425,11 +436,16 @@ export function RecordDetailScreen({ id }: { id: string }) {
               ['json', 'export.json'],
               ['template-pdf', 'export.templatePdf'],
               ['template-svg', 'export.templateSvg'],
+              ['dxf', 'export.dxf'],
+              ['match', 'export.match'],
             ] as const
           ).map(([k, label]) => (
             <Btn
               key={k}
-              disabled={busy || (!views.length && (k === 'svg' || k.startsWith('template')))}
+              disabled={
+                busy ||
+                (!views.length && (k === 'svg' || k === 'dxf' || k === 'match' || k.startsWith('template')))
+              }
               onClick={() => void run(k)}
               data-testid={`export-${k}`}
             >

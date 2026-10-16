@@ -4,7 +4,9 @@
 // inner circle, concentric by default.
 import type { FeatureKind, Vec } from '../../core/types';
 import { add, dist, fitShift, norm, scale, sub, type RectMm } from '../../core/geometry';
-import { circleFrom3, fitCircle } from '../../core/geometry/fit';
+import { arcSpan, circleFrom3, fitCircle } from '../../core/geometry/fit';
+import { matchOringCs, nearestDrills } from '../../core/standards/misc';
+import { formatNumber } from '../../core/units';
 import { roundUpOneSig } from '../../core/uncertainty';
 import type { Handle, Readout, RenderContext, ToolAction, ToolInstance } from '../../render/types';
 import { circlePoints, drawCross, drawKnob, drawOutline, drawScale, drawTag, line } from '../../render/draw';
@@ -433,6 +435,18 @@ export class CircleTool extends BaseTool implements ToolInstance {
           uncertainty: roundUpOneSig(Math.hypot(UD, Ud) / 2),
           unit: 'length',
           nameKey: 'kind.crossSection',
+          notes:
+            s.preset === 'oring'
+              ? [
+                  'CS ≈ ' +
+                    matchOringCs(cs)
+                      .map((m) => `${m.label} (Δ ${formatNumber(m.deltaMm, 2)})`)
+                      .join(' · '),
+                  'ID tables not sourced yet · free O-rings may be stretched — caliper the cord for CS',
+                ]
+              : s.preset === 'washer'
+                ? ['Washer tables (ISO 7089) not sourced yet']
+                : undefined,
         },
         {
           label: 'Øm',
@@ -467,10 +481,26 @@ export class CircleTool extends BaseTool implements ToolInstance {
     let UD = U(D);
     const notes: string[] = [];
     const extra: Readout[] = [];
+    if (s.mode === 'points' && s.pts.length === 3) {
+      const f = fitCircle(s.pts, 30, this.env.pointU());
+      if (f) UD = roundUpOneSig(Math.hypot(UD, 4 * f.uR));
+    }
+    if (s.mode === 'points' && s.pts.length >= 3) {
+      const span = arcSpan(s.pts, s.c);
+      notes.push(span < 120 ? `arc ${Math.round(span)}° — short arc, U grows` : `arc ${Math.round(span)}°`);
+    }
+    if (s.preset === 'rod') {
+      notes.push(
+        'drill ≈ ' +
+          nearestDrills(D)
+            .map((d) => `${d.label} (Δ ${formatNumber(d.deltaMm, 2)})`)
+            .join(' · '),
+      );
+    }
     if (s.mode === 'points' && s.pts.length >= 4) {
-      const f = fitCircle(s.pts);
+      const f = fitCircle(s.pts, 30, this.env.pointU());
       if (f) {
-        UD = roundUpOneSig(Math.hypot(UD, 4 * f.rms * Math.sqrt(2 / f.n)));
+        UD = roundUpOneSig(Math.hypot(UD, 4 * f.uR));
         extra.push({
           label: 'ov',
           kind: 'diameter',

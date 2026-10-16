@@ -30,6 +30,9 @@ const CameraScreen = lazy(() =>
 const AlignScreen = lazy(() =>
   import('../features/camera/AlignScreen').then((m) => ({ default: m.AlignScreen })),
 );
+const LevelScreen = lazy(() =>
+  import('../features/level/LevelScreen').then((m) => ({ default: m.LevelScreen })),
+);
 const WelcomeScreen = lazy(() =>
   import('../features/onboarding/WelcomeScreen').then((m) => ({ default: m.WelcomeScreen })),
 );
@@ -57,6 +60,7 @@ export function App() {
   else if (head === 'edges') screen = <EdgesScreen />;
   else if (head === 'settings') screen = <SettingsScreen />;
   else if (head === 'learn') screen = <LearnScreen />;
+  else if (head === 'level') screen = <LevelScreen />;
   else screen = <MeasureScreen />;
 
   return (

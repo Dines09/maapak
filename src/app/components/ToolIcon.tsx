@@ -108,6 +108,65 @@ export function ToolIcon({ id, size = 22 }: { id: string; size?: number }) {
           <circle cx="20" cy="11" r="1" />
         </svg>
       );
+    case 'threadGauge':
+      return (
+        <svg {...p}>
+          <path d="M3 9h18M3 9l2 5 2-5 2 5 2-5 2 5 2-5 2 5 2-5 2 5" />
+          <path d="M3 19h18" />
+        </svg>
+      );
+    case 'wireGauge':
+      return (
+        <svg {...p}>
+          <path d="M3 8h18M3 16h18" />
+          <circle cx="12" cy="12" r="3.2" />
+          <path d="M12 3v2M12 19v2" />
+        </svg>
+      );
+    case 'radiusGauge':
+      return (
+        <svg {...p}>
+          <path d="M4 20V10a6 6 0 0 1 6-6h10" />
+          <path d="M8 20v-9a3 3 0 0 1 3-3h9" opacity="0.55" />
+        </svg>
+      );
+    case 'grid':
+      return (
+        <svg {...p}>
+          <rect x="3" y="3" width="18" height="18" rx="1" />
+          <path d="M9 3v18M15 3v18M3 9h18M3 15h18" />
+        </svg>
+      );
+    case 'datumXY':
+      return (
+        <svg {...p}>
+          <path d="M4 20V4M4 20h16M2.5 6 4 4l1.5 2M18 18.5l2 1.5-2 1.5" />
+          <circle cx="11" cy="13" r="1.2" />
+          <circle cx="16" cy="8" r="1.2" />
+        </svg>
+      );
+    case 'level':
+      return (
+        <svg {...p}>
+          <rect x="2" y="8" width="20" height="8" rx="4" />
+          <circle cx="12" cy="12" r="2" />
+          <path d="M8.5 9v6M15.5 9v6" />
+        </svg>
+      );
+    case 'bolt':
+      return (
+        <svg {...p}>
+          <path d="M7 3h10v4H7z" />
+          <path d="M10 7v14h4V7M10 10l4 1.5M10 13l4 1.5M10 16l4 1.5" />
+        </svg>
+      );
+    case 'identify':
+      return (
+        <svg {...p}>
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m15.5 15.5 5 5M8.5 8.6a2 2 0 1 1 2.6 2.1c-.6.3-.6.8-.6 1.3M10.5 14v.01" />
+        </svg>
+      );
     case 'shapes':
       return (
         <svg {...p}>

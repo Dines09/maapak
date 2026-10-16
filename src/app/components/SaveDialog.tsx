@@ -56,7 +56,9 @@ export function SaveDialog({
 
   useEffect(() => {
     if (!open) return;
-    void nextRecordName().then(setName);
+    // The default name arrives async: never overwrite what the user has typed meanwhile.
+    setName('');
+    void nextRecordName().then((n) => setName((cur) => cur || n));
     void listRecords().then((r) => {
       setRecords(r.slice(0, 30));
       setTargetId(r[0]?.id ?? '');

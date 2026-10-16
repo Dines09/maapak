@@ -3,6 +3,7 @@
 import type { Measurement, PartRecord } from '../../core/types';
 import type { DrawingView, GhostShape, ToolInstance } from '../../render/types';
 import { TOOL_REGISTRY } from '../../tools/registry';
+import { boltGhost, boltViews } from '../bolt/bolt';
 
 export interface RecordView {
   title: string;
@@ -37,6 +38,11 @@ function groups(rec: PartRecord): { tool: ToolInstance; ms: Measurement[] }[] {
 
 /** One drawing view per tool setup; dimension labels and values come from the record's measurements. */
 export function recordViews(rec: PartRecord): RecordView[] {
+  // Bolt Wizard records: one front + top drawing of the whole bolt instead of one view per tool.
+  if (rec.bolt) {
+    const bv = boltViews(rec, rec.bolt.head);
+    if (bv.length) return bv;
+  }
   const views: RecordView[] = [];
   for (const { tool, ms } of groups(rec)) {
     const top = tool.toDrawing().views.top;
@@ -61,6 +67,10 @@ export function recordViews(rec: PartRecord): RecordView[] {
 
 /** Camera ghost for a view: the first measured shape that has one (§10.3). */
 export function recordGhost(rec: PartRecord, view: 'top' | 'side' | 'front' = 'top'): GhostShape | null {
+  if (rec.bolt && view !== 'top') {
+    const g = boltGhost(rec, rec.bolt.head);
+    if (g) return g;
+  }
   for (const { tool } of groups(rec)) {
     const g = tool.toGhost(view);
     if (g && g.edgeSamples.length > 4) return g;

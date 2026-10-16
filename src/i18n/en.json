@@ -8,7 +8,9 @@
     "off": "Off",
     "on": "On",
     "save": "Save",
-    "skip": "Skip"
+    "skip": "Skip",
+    "done": "Done",
+    "add": "Add"
   },
   "nav": {
     "calibrate": "Calibrate",
@@ -30,7 +32,7 @@
     "hex": "Hex / Nut-bolt",
     "rect": "Rectangle",
     "polygon": "Area / Polygon",
-    "gasket": "Gasket & PCD",
+    "gasket": "Gasket builder",
     "threadGauge": "Thread gauge",
     "radiusGauge": "Radius gauge",
     "wireGauge": "Wire gauge",
@@ -43,7 +45,9 @@
     "circleShort": "Circle",
     "hexShort": "Hex",
     "rectShort": "Rect",
-    "box": "L × W"
+    "box": "L × W",
+    "pcd": "PCD finder",
+    "template": "Template match"
   },
   "dock": {
     "label": "Measuring tools",
@@ -466,7 +470,8 @@
     "gasket": "Gasket",
     "squarePiece": "Square piece",
     "rectPlate": "Rectangle plate",
-    "rod": "Rod / Pipe"
+    "rod": "Rod / Pipe",
+    "pcd": "Bolt circle (PCD)"
   },
   "wheel": {
     "label": "Thumb wheel",
@@ -665,7 +670,9 @@
     "templateSvg": "1:1 template SVG",
     "printNote": "Print at 100 % / Actual size — check the 100 mm bar with a ruler.",
     "hint": "Uses Web Share when the phone supports it, otherwise downloads the file.",
-    "failed": "Export failed"
+    "failed": "Export failed",
+    "dxf": "DXF (CAD, 1:1 mm)",
+    "match": "Match on screen (1:1)"
   },
   "backup": {
     "export": "Backup (.zip)",
@@ -678,5 +685,125 @@
     "on": "Batch mode — Save goes straight to the next record",
     "prefix": "Name prefix",
     "hint": "For sorting many parts quickly: each Save creates “Prefix-01”, “Prefix-02”… without asking. Export them all as CSV from Records."
+  },
+  "thread": {
+    "toCount": "Crest count",
+    "toComb": "Comb",
+    "mmPitch": "Metric pitch",
+    "tpi": "TPI",
+    "nMinus": "N −1",
+    "nPlus": "N +1",
+    "metricBest": "Metric",
+    "inchBest": "Inch",
+    "verdict": {
+      "metric": "Verdict: metric thread",
+      "inch": "Verdict: inch thread",
+      "unclear": "Metric or inch: unclear — count more crests"
+    },
+    "countHint": "Put the first line on a crest and the second on the crest {{n}} pitches away",
+    "span": "Span"
+  },
+  "wire": {
+    "conductor": "Conductor Ø",
+    "nearest": "nearest",
+    "cable": "cable",
+    "hint": "Measure the bare conductor. Stranded wire reads larger than its solid equivalent.",
+    "area": "Cross-section"
+  },
+  "radius": {
+    "toPoints": "3-point arc",
+    "toTemplate": "Template",
+    "concave": "Concave",
+    "convex": "Convex"
+  },
+  "grid": {
+    "spacing": "Grid spacing"
+  },
+  "datum": {
+    "add": "Add point",
+    "remove": "Remove point"
+  },
+  "gasket": {
+    "toPcd": "PCD finder",
+    "toBuilder": "Gasket builder",
+    "addHole": "Add hole",
+    "removeHole": "Remove hole",
+    "holes": "Holes N",
+    "holeD": "Hole Ø",
+    "pitch": "Angular pitch",
+    "bore": "Add bore",
+    "noBore": "No bore",
+    "outer": {
+      "circle": "Outer: circle",
+      "rect": "Outer: rectangle",
+      "obround": "Outer: obround"
+    }
+  },
+  "template": {
+    "band": "Tolerance band ±"
+  },
+  "bolt": {
+    "title": "Bolt Wizard",
+    "pickHead": "Pick the head type. The wizard then walks you through length, shank Ø, head, head height and thread pitch, and saves everything in one record.",
+    "lengthRule": "Length: from under the head to the tip. Countersunk heads: overall length, including the head.",
+    "head": {
+      "hex": "Hex",
+      "socket": "Socket cap",
+      "countersunk": "Countersunk",
+      "button": "Button",
+      "pan": "Pan",
+      "carriage": "Carriage"
+    },
+    "headBolt": {
+      "hex": "Hex head bolt",
+      "socket": "Socket head cap screw",
+      "countersunk": "Countersunk screw",
+      "button": "Button head screw",
+      "pan": "Pan head screw",
+      "carriage": "Carriage bolt"
+    },
+    "result": "Bolt result",
+    "confidence": "confidence {{pct}} %",
+    "major": "Measured major Ø {{d}} mm → {{nominal}} (nominal {{nd}} mm; external threads measure a little under nominal)",
+    "alternatives": "Also possible",
+    "nut": "Nut",
+    "washerNote": "Washer: tables (ISO 7089) not sourced yet",
+    "needPitch": "Measure the thread pitch to separate metric and inch sizes.",
+    "needDiameter": "Measure the shank diameter to identify the thread."
+  },
+  "identify": {
+    "title": "What is this?",
+    "empty": "Select a tool and measure a diameter, AF, cross-section or pitch first.",
+    "note": "Matches come only from the sourced tables in the app; rows are still marked unverified. Check before ordering parts.",
+    "cat": {
+      "nut": "Nut / spanner",
+      "thread": "Thread size",
+      "pitch": "Thread pitch",
+      "oring": "O-ring cross-section",
+      "wire": "Wire gauge",
+      "drill": "Drill / rod"
+    }
+  },
+  "level": {
+    "soundOn": "Sound on",
+    "soundOff": "Sound off",
+    "mode": "Mode",
+    "surface": "Surface (flat)",
+    "edge": "Edge / angle",
+    "enable": "Enable motion sensors",
+    "fromVertical": "from vertical",
+    "target": "Target",
+    "fallback": "Using orientation angles (no motion sensor data)",
+    "release": "Release",
+    "capture": "Capture {{n}}/2",
+    "calibrate": "Calibrate",
+    "biasInfo": "Calibration offset {{v}}°",
+    "clearCal": "Clear",
+    "presets": "Slope presets",
+    "shortEdge": "Short edge",
+    "longEdge": "Long edge",
+    "cal1": "Reversal calibration: place the phone on a surface and tap Capture 1/2.",
+    "cal2": "Turn the phone 180° on the same spot (end for end) and tap Capture 2/2.",
+    "note": "Lay the phone flat for a surface, or stand it on an edge to read an angle. Display is 0.1°; real accuracy depends on the phone — calibrate with the reversal method for the best result."
   }
 }

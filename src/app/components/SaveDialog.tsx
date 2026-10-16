@@ -15,6 +15,7 @@ import {
 import { useSettings } from '../../state/settings';
 import { fmtReadout } from './ReadoutHud';
 import { Btn, Field, Segmented, Sheet, inputCls, useToast } from './ui';
+import { RECIPES, type RecipeId } from '../../features/records/recipes';
 import { fmtU } from './ReadoutHud';
 
 export function SaveDialog({
@@ -50,6 +51,7 @@ export function SaveDialog({
   const [notes, setNotes] = useState('');
   const [by, setBy] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
+  const [recipe, setRecipe] = useState<RecipeId>('custom');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -83,6 +85,7 @@ export function SaveDialog({
           notes: notes.trim() || undefined,
           measuredBy: by.trim() || undefined,
           calibrationLabel,
+          recipe: recipe === 'custom' ? undefined : recipe,
         };
       }
       r = withMeasurements(r, measurements, calibrationId);
@@ -154,6 +157,20 @@ export function SaveDialog({
               <input className={inputCls} value={project} onChange={(e) => setProject(e.target.value)} />
             </Field>
           </div>
+          <Field label={t('recipe.partType')}>
+            <select
+              className={inputCls}
+              value={recipe}
+              onChange={(e) => setRecipe(e.target.value as RecipeId)}
+              data-testid="save-recipe"
+            >
+              {(['custom', ...Object.keys(RECIPES)] as RecipeId[]).map((k) => (
+                <option key={k} value={k}>
+                  {t(`recipe.${k}`)}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label={t('record.tags')}>
             <input
               className={inputCls}

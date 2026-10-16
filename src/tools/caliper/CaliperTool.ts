@@ -20,6 +20,8 @@ import { drawKnob, drawMarkerLine, drawScale, drawText, polygonPx } from '../../
 import { fmtLength, unitLabel } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
 import { at, frameN, frameU, toLocal } from '../frame';
+import { ghostFrom, diameter, spanDrawing } from '../drawing';
+import type { DrawingEntities, GhostShape } from '../../render/types';
 
 export type CaliperFeature = 'OD' | 'ID' | 'W' | 'L';
 export type CaliperSkin = 'vernier' | 'dial' | 'digital';
@@ -356,6 +358,50 @@ export class CaliperTool extends BaseTool implements ToolInstance {
         toolState: this.serialize(),
       },
     ];
+  }
+
+  toDrawing(): DrawingEntities {
+    const s = this.s;
+    const kind = FEATURE_KIND[s.feature];
+    if (s.feature === 'OD' || s.feature === 'ID') {
+      const r = s.s / 2;
+      return {
+        views: {
+          top: {
+            outline: [
+              { type: 'circle', center: [0, 0], r },
+              { type: 'line', a: [-r - 3, 0], b: [r + 3, 0], style: 'centre' },
+              { type: 'line', a: [0, -r - 3], b: [0, r + 3], style: 'centre' },
+            ],
+            dims: [diameter(kind, this.label, s.s, 0, [0, 0])],
+          },
+        },
+      };
+    }
+    return spanDrawing(kind, this.label, s.s, 0);
+  }
+
+  toGhost(): GhostShape {
+    const s = this.s;
+    if (s.feature === 'OD' || s.feature === 'ID')
+      return ghostFrom([{ kind: 'circle', center: [0, 0], r: s.s / 2 }]);
+    const h = Math.max(15, s.s * 0.6);
+    return ghostFrom([
+      {
+        kind: 'polyline',
+        points: [
+          [-s.s / 2, -h / 2],
+          [-s.s / 2, h / 2],
+        ],
+      },
+      {
+        kind: 'polyline',
+        points: [
+          [s.s / 2, -h / 2],
+          [s.s / 2, h / 2],
+        ],
+      },
+    ]);
   }
 
   serialize(): CaliperState {

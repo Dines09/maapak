@@ -30,6 +30,9 @@ import {
 } from '../../render/draw';
 import { fmtLength } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
+import { ghostFrom, linear, rectPts } from '../drawing';
+import type { DrawingEntities, GhostShape } from '../../render/types';
+
 import { TICK_SCALE } from '../ruler/RulerTool';
 
 const STRIP = 7;
@@ -428,6 +431,30 @@ export class GapRulerTool extends BaseTool implements ToolInstance {
         uncertainty: r.uncertainty,
         toolState: this.serialize(),
       }));
+  }
+
+  toDrawing(): DrawingEntities {
+    const s = this.s;
+    const W = Math.max(0, s.oA - s.oB);
+    const L = Math.abs(s.b - s.a);
+    return {
+      views: {
+        top: {
+          outline: [{ type: 'polyline', points: rectPts(L, W), closed: true }],
+          dims: [
+            linear('length', `L${s.n}`, L, 0, [-L / 2, W / 2], [L / 2, W / 2], -8),
+            linear('width', `W${s.n}`, W, 0, [L / 2, W / 2], [L / 2, -W / 2], -8),
+          ],
+        },
+      },
+    };
+  }
+
+  toGhost(): GhostShape {
+    const s = this.s;
+    return ghostFrom([
+      { kind: 'polyline', points: rectPts(Math.abs(s.b - s.a), Math.max(1, s.oA - s.oB)), closed: true },
+    ]);
   }
 
   serialize(): GapState {

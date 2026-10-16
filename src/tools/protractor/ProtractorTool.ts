@@ -26,6 +26,7 @@ import { inkFor } from '../../core/color';
 import { drawKnob, drawMarkerLine, drawScale, drawTag, drawText, line } from '../../render/draw';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
 import { fmtAngle } from '../../render/format';
+import type { DrawingEntities } from '../../render/types';
 
 export type ProtractorMode = 'half' | 'full' | 'twoLine';
 export const SNAP_STEPS = [0, 0.5, 1, 5, 15] as const;
@@ -475,6 +476,48 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
         toolState: this.serialize(),
       },
     ];
+  }
+
+  toDrawing(): DrawingEntities {
+    const s = this.s;
+    const L = 30;
+    let a1: number;
+    let a2: number;
+    let value: number;
+    if (s.mode === 'twoLine') {
+      const [p0, p1, p2, p3] = s.pts;
+      a1 = rad2deg(Math.atan2(p1[1] - p0[1], p1[0] - p0[0]));
+      a2 = rad2deg(Math.atan2(p3[1] - p2[1], p3[0] - p2[0]));
+      value = this.lineAngle();
+    } else {
+      a1 = s.base;
+      a2 = s.base - s.phi;
+      value = s.phi;
+    }
+    const ray = (a: number): Vec => [L * Math.cos((a * Math.PI) / 180), L * Math.sin((a * Math.PI) / 180)];
+    return {
+      views: {
+        top: {
+          outline: [
+            { type: 'line', a: [0, 0], b: ray(a1) },
+            { type: 'line', a: [0, 0], b: ray(a2) },
+          ],
+          dims: [
+            {
+              kind: 'angle',
+              label: `A${s.n}`,
+              value,
+              uncertainty: 0,
+              type: 'angle',
+              vertex: [0, 0],
+              a1,
+              a2,
+              rArc: L * 0.6,
+            },
+          ],
+        },
+      },
+    };
   }
 
   serialize(): ProtractorState {

@@ -20,6 +20,8 @@ import { drawKnob, drawOutline, drawTag, line } from '../../render/draw';
 import { fmtLength } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
 import { at, frameN, frameU, toLocal } from '../frame';
+import { ghostFrom, linear, rectPts } from '../drawing';
+import type { DrawingEntities, GhostShape } from '../../render/types';
 
 export interface RectState {
   v: 1;
@@ -367,6 +369,33 @@ export class RectTool extends BaseTool implements ToolInstance {
         uncertainty: r.uncertainty,
         toolState: this.serialize(),
       }));
+  }
+
+  toDrawing(): DrawingEntities {
+    const s = this.s;
+    const dims = [
+      linear('length', `L${s.n}`, s.w, 0, [-s.w / 2, s.h / 2], [s.w / 2, s.h / 2], -8),
+      linear('width', `W${s.n}`, s.h, 0, [s.w / 2, s.h / 2], [s.w / 2, -s.h / 2], -8),
+    ];
+    if (s.r > 0.05) {
+      dims.push({
+        kind: 'radius',
+        label: 'R',
+        value: s.r,
+        uncertainty: 0,
+        type: 'radius',
+        center: [s.w / 2 - s.r, -s.h / 2 + s.r],
+        r: s.r,
+        dirDeg: -45,
+      });
+    }
+    return {
+      views: { top: { outline: [{ type: 'polyline', points: rectPts(s.w, s.h, s.r), closed: true }], dims } },
+    };
+  }
+
+  toGhost(): GhostShape {
+    return ghostFrom([{ kind: 'polyline', points: rectPts(this.s.w, this.s.h, this.s.r), closed: true }]);
   }
 
   serialize(): RectState {

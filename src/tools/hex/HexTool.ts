@@ -31,6 +31,8 @@ import type {
 import { drawCross, drawKnob, drawOutline, drawTag, line } from '../../render/draw';
 import { fmtLength } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
+import { ghostFrom, linear, nutPts } from '../drawing';
+import type { DrawingEntities, GhostShape } from '../../render/types';
 
 export interface HexState {
   v: 1;
@@ -319,6 +321,25 @@ export class HexTool extends BaseTool implements ToolInstance {
       uncertainty: r.uncertainty,
       toolState: this.serialize(),
     }));
+  }
+
+  toDrawing(): DrawingEntities {
+    const s = this.s;
+    const sides = s.mode === 'hex' ? 6 : 4;
+    const pts = nutPts(s.af, sides);
+    const top = Math.min(...pts.map((p) => p[1]));
+    const bottom = Math.max(...pts.map((p) => p[1]));
+    const dims = [linear('acrossFlats', `AF${s.n}`, s.af, 0, [-s.af / 2, bottom], [s.af / 2, bottom], -8)];
+    if (sides === 6) {
+      dims.push(linear('acrossCorners', `AC${s.n}`, bottom - top, 0, [0, bottom], [0, top], -(s.af / 2 + 6)));
+    }
+    return { views: { top: { outline: [{ type: 'polyline', points: pts, closed: true }], dims } } };
+  }
+
+  toGhost(): GhostShape {
+    return ghostFrom([
+      { kind: 'polyline', points: nutPts(this.s.af, this.s.mode === 'hex' ? 6 : 4), closed: true },
+    ]);
   }
 
   serialize(): HexState {

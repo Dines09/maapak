@@ -50,7 +50,10 @@ import { extraKey, useExtras } from '../../state/extras';
 import { UndoStack, autosave, loadSession } from '../../state/session';
 import { db, pushHistory, type HistoryEntry } from '../../db';
 import type { ToolMeasurement } from '../../tools/base';
-import { navigate } from '../../app/router';
+import { navigate, useRoute } from '../../app/router';
+import { blankRecord, getRecord, nextRecordName, saveRecord, withMeasurements } from '../records/repo';
+import { recipeProgress, type RecipeStep } from '../records/recipes';
+import type { PartRecord } from '../../core/types';
 import { ReadoutHud, fmtReadout, fmtU } from '../../app/components/ReadoutHud';
 import { BackgroundPanel, nextPreset } from '../../app/components/BackgroundPanel';
 import { SaveDialog } from '../../app/components/SaveDialog';
@@ -126,6 +129,9 @@ export function MeasureScreen() {
   const [shapesOpen, setShapesOpen] = useState(false);
   const [tolTarget, setTolTarget] = useState<{ key: string; readout: Readout } | null>(null);
   const [wheelOpen, setWheelOpen] = useState(false);
+  const route = useRoute();
+  /** "Measure into record" from a recipe step (§9 guided recipes). */
+  const [into, setInto] = useState<{ rec: PartRecord; step: RecipeStep } | null>(null);
 
   // ---------- stage lifecycle ----------
   useEffect(() => {
@@ -369,6 +375,27 @@ export function MeasureScreen() {
     if (settings.loaded && settings.onboarded && !settings.tourDone && tour === null) setTour(0);
   }, [settings.loaded, settings.onboarded, settings.tourDone, tour]);
 
+  const intoId = route.query.get('into');
+  const stepIdx = Number(route.query.get('step') ?? -1);
+  useEffect(() => {
+    if (!intoId) {
+      setInto(null);
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([getRecord(intoId), stageRef.current?.ready]).then(([r]) => {
+      if (cancelled || !r) return;
+      const step = recipeProgress(r)[stepIdx]?.step;
+      if (!step) return;
+      setInto({ rec: r, step });
+      pickTool(step.tool, step.init ?? {});
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intoId, stepIdx]);
+
   // ---------- actions ----------
   const pickTool = (id: ToolId, init: Partial<Record<string, unknown>> = {}) => {
     const st = stageRef.current;
@@ -431,6 +458,38 @@ export function MeasureScreen() {
       }
       return out;
     });
+    // Recipe step: straight into the record, only the feature the step asks for.
+    if (into) {
+      const wanted = list.filter((m) => into.step.kinds.includes(m.kind));
+      const rec = withMeasurements(
+        into.rec,
+        wanted.length ? wanted : list.slice(0, 1),
+        scale.profile.id,
+        into.step.prefix,
+      );
+      void saveRecord(rec).then(() => {
+        toast(t('save.saved', { name: rec.name }));
+        navigate(`/records/${rec.id}`, true);
+      });
+      return;
+    }
+    // Batch / inventory mode: next "Prefix-NN" without a dialog.
+    if (settings.batch.on && list.length) {
+      void nextRecordName(settings.batch.prefix).then(async (name) => {
+        const rec = withMeasurements(
+          {
+            ...blankRecord(name),
+            measuredBy: settings.measuredBy || undefined,
+            calibrationLabel: scale.calibrated ? scale.profile.name : t('conf.estimate'),
+          },
+          list,
+          scale.profile.id,
+        );
+        await saveRecord(rec);
+        toast(t('save.saved', { name }));
+      });
+      return;
+    }
     setSaveMs(list);
   };
 
@@ -533,6 +592,26 @@ export function MeasureScreen() {
           <IconBtn label={t('nav.settings')} onClick={() => navigate('/settings')} className="h-9 min-w-9">
             <SettingsIcon size={19} />
           </IconBtn>
+        </div>
+      )}
+
+      {(into || settings.batch.on) && !focus && (
+        <div
+          className="absolute left-1/2 top-12 z-30 flex -translate-x-1/2 items-center gap-1 rounded-full bg-sky-600/95 px-3 py-1 text-xs font-bold text-white shadow"
+          data-testid="into-chip"
+        >
+          {into
+            ? `→ ${into.rec.name}: ${t(into.step.nameKey)}`
+            : `${t('batch.title')}: ${settings.batch.prefix}-NN`}
+          <button
+            aria-label={t('common.cancel')}
+            className="ml-1"
+            onClick={() =>
+              into ? navigate('/', true) : settings.set({ batch: { ...settings.batch, on: false } })
+            }
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 

@@ -241,7 +241,7 @@
     "feature": "Feature",
     "value": "Value",
     "calibration": "Calibration",
-    "exportLater": "PDF / JPG / CSV export, drawings and the camera ghost overlay arrive in Phase 3."
+    "tolerance": "Tol."
   },
   "records": {
     "search": "Search name, part no., project, tag…",
@@ -249,7 +249,19 @@
     "count": "{{n}} measurements",
     "notFound": "Record not found",
     "delete": "Delete record",
-    "confirmDelete": "Delete “{{name}}” and its photos?"
+    "confirmDelete": "Delete “{{name}}” and its photos?",
+    "duplicate": "Duplicate",
+    "copySuffix": "(copy)",
+    "compare": "Compare",
+    "compareHint": "Open a record and tap Compare, then pick the second record.",
+    "compareWith": "Comparing with “{{name}}” — tap another record.",
+    "compareTitle": "Compare records",
+    "sort": "Sort",
+    "sortDate": "Newest first",
+    "sortName": "Name",
+    "importJson": "Import JSON",
+    "imported": "Imported “{{name}}”",
+    "importFailed": "Not a Maapak record file"
   },
   "history": {
     "title": "Quick history (last 50)",
@@ -384,7 +396,6 @@
     "storage": "Storage used: {{used}} MB of {{quota}} MB",
     "persisted": "Storage is persistent.",
     "notPersisted": "The browser may clear storage when space is low.",
-    "backupLater": "Backup / restore (.maapak.zip) arrives in Phase 3.",
     "clear": "Clear all data",
     "confirmClear": "Delete all records, calibrations and settings on this device?",
     "about": "About",
@@ -392,7 +403,19 @@
     "canvasLabels": "Value labels on the canvas",
     "canvasLabelsHint": "Off keeps the screen clean; the reading pill always shows the value.",
     "spotlight": "Dim outside the measured area",
-    "spotlightHint": "The part stays bright between the lines; everything else darkens, so you always see where the lines are."
+    "spotlightHint": "The part stays bright between the lines; everything else darkens, so you always see where the lines are.",
+    "camera": "Camera",
+    "autoCapture": "Auto-capture when the outline turns green",
+    "matchThreshold": "Match threshold",
+    "torchDefault": "Torch on by default",
+    "keepOriginal": "Keep original photo",
+    "keepOriginalHint": "Also stores the full-size image (uses more space).",
+    "photoQuality": "Photo quality (JPEG %)",
+    "drawing": "Drawing & export",
+    "projection": "Projection",
+    "paper": "Paper",
+    "company": "Company (title block)",
+    "engineer": "Engineer (title block)"
   },
   "learn": {
     "accuracy": {
@@ -555,5 +578,105 @@
     "lens": "Lens",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out"
+  },
+  "camera": {
+    "open": "Camera",
+    "gallery": "From gallery",
+    "shutter": "Take photo",
+    "torch": "Torch",
+    "tilt": "Tilt",
+    "match": "Match",
+    "saved": "Photo saved with dimensions",
+    "aligned": "Ghost aligned — dimensions placed on the photo",
+    "align": "Align",
+    "alignTitle": "Align the outline",
+    "alignHint": "Drag the green outline onto the part. Two fingers: pinch to scale, twist to rotate.",
+    "scale": "Scale",
+    "rotation": "Rotation",
+    "noCamera": "Camera not available or permission denied. Pick a photo from the gallery and align the outline by hand.",
+    "noGhost": "Measure the part first — the camera uses the measured shape as a guide.",
+    "view": {
+      "top": "Top",
+      "side": "Side",
+      "front": "Front"
+    },
+    "hint": {
+      "hold": "Hold steady",
+      "left": "Move left",
+      "right": "Move right",
+      "up": "Move up",
+      "down": "Move down",
+      "closer": "Move closer",
+      "farther": "Move back",
+      "rotateCw": "Rotate clockwise",
+      "rotateCcw": "Rotate anticlockwise",
+      "dark": "Too dark — turn the torch on",
+      "blurry": "Hold still — image is blurry",
+      "search": "Point at the part",
+      "flat": "Hold the phone flat over the part",
+      "upright": "Hold the phone upright"
+    }
+  },
+  "recipe": {
+    "partType": "Part type (recipe)",
+    "measure": "Measure",
+    "custom": "Custom",
+    "bolt": "Bolt",
+    "nut": "Nut",
+    "oring": "O-ring",
+    "washer": "Washer",
+    "gasket": "Gasket",
+    "rect": "Rectangular piece",
+    "step": {
+      "boltLength": "Length (under head to tip)",
+      "shank": "Shank diameter",
+      "af": "Across flats (spanner)",
+      "headHeight": "Head height k",
+      "pitch": "Thread pitch",
+      "bore": "Bore / thread diameter",
+      "nutHeight": "Nut height m",
+      "id": "Inner diameter",
+      "cs": "Cross-section",
+      "od": "Outer diameter",
+      "pcd": "Bolt circle (PCD)",
+      "length": "Length",
+      "width": "Width"
+    }
+  },
+  "drawing": {
+    "note": "All dimensions in {{unit}}",
+    "units": "Units",
+    "date": "Date",
+    "scale": "Scale",
+    "projection": {
+      "first": "First angle",
+      "third": "Third angle"
+    }
+  },
+  "export": {
+    "title": "Export & share",
+    "pdf": "PDF sheet",
+    "jpg": "JPG card",
+    "png": "PNG card",
+    "svg": "SVG drawing",
+    "csv": "CSV table",
+    "json": "JSON (re-import)",
+    "templatePdf": "1:1 template PDF",
+    "templateSvg": "1:1 template SVG",
+    "printNote": "Print at 100 % / Actual size — check the 100 mm bar with a ruler.",
+    "hint": "Uses Web Share when the phone supports it, otherwise downloads the file.",
+    "failed": "Export failed"
+  },
+  "backup": {
+    "export": "Backup (.zip)",
+    "import": "Restore",
+    "restored": "Restored {{n}} records",
+    "failed": "Not a Maapak backup"
+  },
+  "batch": {
+    "title": "Batch",
+    "on": "Batch mode — Save goes straight to the next record",
+    "prefix": "Name prefix",
+    "hint": "For sorting many parts quickly: each Save creates “Prefix-01”, “Prefix-02”… without asking. Export them all as CSV from Records."
   }
 }

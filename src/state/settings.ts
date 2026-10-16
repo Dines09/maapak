@@ -28,6 +28,19 @@ export interface Settings {
   nudgeStep: 'px' | '0.05';
   canvasLabels: boolean;
   spotlight: boolean;
+  /** Camera (§14) */
+  autoCapture: boolean;
+  matchThreshold: number;
+  torchDefault: boolean;
+  keepOriginal: boolean;
+  photoQuality: number;
+  /** Drawing & export (§14) */
+  projection: 'first' | 'third';
+  paper: 'a4' | 'letter';
+  company: string;
+  engineer: string;
+  /** Batch / inventory mode (§9): Save goes straight to the next "Prefix-NN" record. */
+  batch: { on: boolean; prefix: string };
   language: 'en' | 'hi';
   background: BackgroundSpec;
   bgByTool: Record<string, BackgroundSpec>;
@@ -58,6 +71,16 @@ export const DEFAULT_SETTINGS: Settings = {
   nudgeStep: 'px',
   canvasLabels: false,
   spotlight: true,
+  autoCapture: true,
+  matchThreshold: 85,
+  torchDefault: false,
+  keepOriginal: false,
+  photoQuality: 0.85,
+  projection: 'first',
+  paper: 'a4',
+  company: '',
+  engineer: '',
+  batch: { on: false, prefix: 'Part' },
   language: 'en',
   background: { color: '#ffffff', pattern: 'none' },
   bgByTool: {},

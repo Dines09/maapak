@@ -8,6 +8,8 @@ import type { Handle, Readout, RenderContext, ToolAction, ToolInstance } from '.
 import { drawKnob, drawOutline, drawTag } from '../../render/draw';
 import { fmtArea, fmtLength, unitLabel } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
+import { ghostFrom, linear } from '../drawing';
+import type { DrawingEntities, GhostShape } from '../../render/types';
 
 export interface PolygonState {
   v: 1;
@@ -249,6 +251,33 @@ export class PolygonTool extends BaseTool implements ToolInstance {
         uncertainty: r.uncertainty,
         toolState: this.serialize(),
       }));
+  }
+
+  toDrawing(): DrawingEntities {
+    const s = this.s;
+    const c = scale(
+      s.pts.reduce((a, p) => add(a, p), [0, 0] as Vec),
+      1 / Math.max(1, s.pts.length),
+    );
+    const pts = s.pts.map((p) => sub(p, c));
+    const n = s.closed ? pts.length : pts.length - 1;
+    const dims = [];
+    for (let i = 0; i < Math.min(n, 8); i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % pts.length];
+      dims.push(linear('length', `S${i + 1}`, dist(a, b), 0, a, b, -6));
+    }
+    return { views: { top: { outline: [{ type: 'polyline', points: pts, closed: s.closed }], dims } } };
+  }
+
+  toGhost(): GhostShape | null {
+    const s = this.s;
+    if (s.pts.length < 2) return null;
+    const c = scale(
+      s.pts.reduce((a, p) => add(a, p), [0, 0] as Vec),
+      1 / s.pts.length,
+    );
+    return ghostFrom([{ kind: 'polyline', points: s.pts.map((p) => sub(p, c)), closed: s.closed }]);
   }
 
   serialize(): PolygonState {

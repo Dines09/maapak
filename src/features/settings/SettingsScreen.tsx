@@ -198,6 +198,86 @@ export function SettingsScreen() {
           />
         </Section>
 
+        <Section title={t('settings.camera')}>
+          <Toggle
+            label={t('settings.autoCapture')}
+            checked={s.autoCapture}
+            onChange={(v) => s.set({ autoCapture: v })}
+          />
+          <Row label={t('settings.matchThreshold')}>
+            <Segmented
+              size="sm"
+              label={t('settings.matchThreshold')}
+              value={s.matchThreshold}
+              onChange={(matchThreshold) => s.set({ matchThreshold })}
+              options={[75, 80, 85, 90].map((v) => ({ value: v, label: String(v) }))}
+            />
+          </Row>
+          <Toggle
+            label={t('settings.torchDefault')}
+            checked={s.torchDefault}
+            onChange={(v) => s.set({ torchDefault: v })}
+          />
+          <Toggle
+            label={t('settings.keepOriginal')}
+            hint={t('settings.keepOriginalHint')}
+            checked={s.keepOriginal}
+            onChange={(v) => s.set({ keepOriginal: v })}
+          />
+          <Row label={t('settings.photoQuality')}>
+            <Segmented
+              size="sm"
+              label={t('settings.photoQuality')}
+              value={s.photoQuality}
+              onChange={(photoQuality) => s.set({ photoQuality })}
+              options={[0.75, 0.85, 0.95].map((v) => ({ value: v, label: `${Math.round(v * 100)}` }))}
+            />
+          </Row>
+        </Section>
+
+        <Section title={t('settings.drawing')}>
+          <Row label={t('settings.projection')}>
+            <Segmented
+              size="sm"
+              label={t('settings.projection')}
+              value={s.projection}
+              onChange={(projection) => s.set({ projection })}
+              options={[
+                { value: 'first', label: t('drawing.projection.first') },
+                { value: 'third', label: t('drawing.projection.third') },
+              ]}
+            />
+          </Row>
+          <Row label={t('settings.paper')}>
+            <Segmented
+              size="sm"
+              label={t('settings.paper')}
+              value={s.paper}
+              onChange={(paper) => s.set({ paper })}
+              options={[
+                { value: 'a4', label: 'A4' },
+                { value: 'letter', label: 'Letter' },
+              ]}
+            />
+          </Row>
+          <label className="block py-1.5 text-sm">
+            {t('settings.company')}
+            <input
+              className="mt-1 min-h-10 w-full rounded-lg bg-slate-800 px-2"
+              value={s.company}
+              onChange={(e) => s.set({ company: e.target.value })}
+            />
+          </label>
+          <label className="block py-1.5 text-sm">
+            {t('settings.engineer')}
+            <input
+              className="mt-1 min-h-10 w-full rounded-lg bg-slate-800 px-2"
+              value={s.engineer}
+              onChange={(e) => s.set({ engineer: e.target.value })}
+            />
+          </label>
+        </Section>
+
         <Section title={t('settings.language')}>
           <Segmented
             label={t('settings.language')}
@@ -224,7 +304,39 @@ export function SettingsScreen() {
               {persisted ? t('settings.persisted') : t('settings.notPersisted')}
             </p>
           )}
-          <p className="mt-1 text-xs text-slate-400">{t('settings.backupLater')}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Btn
+              onClick={async () => {
+                const { exportBackup } = await import('../export/backup');
+                const { shareOrDownload } = await import('../export/common');
+                await shareOrDownload(
+                  await exportBackup(),
+                  `maapak-${new Date().toISOString().slice(0, 10)}.maapak.zip`,
+                );
+              }}
+            >
+              {t('backup.export')}
+            </Btn>
+            <label className="inline-flex min-h-11 cursor-pointer items-center rounded-xl bg-slate-700/80 px-4 text-sm font-semibold">
+              {t('backup.import')}
+              <input
+                type="file"
+                accept=".zip,application/zip"
+                className="sr-only"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  const { importBackup } = await import('../export/backup');
+                  try {
+                    await importBackup(f);
+                    location.reload();
+                  } catch {
+                    alert(t('backup.failed'));
+                  }
+                }}
+              />
+            </label>
+          </div>
           <Btn variant="danger" className="mt-3" onClick={() => void clearAll()}>
             {t('settings.clear')}
           </Btn>

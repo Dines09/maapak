@@ -32,7 +32,9 @@ test('dragging a marker changes the reading; undo restores it', async ({ page })
   await expect.poll(() => hudValue(page)).toBe(before);
 });
 
-test('touches that start inside the bright (measured) area never move a tool (ghost touch shield)', async ({ page }) => {
+test('touches that start inside the bright (measured) area never move a tool (ghost touch shield)', async ({
+  page,
+}) => {
   await skipOnboarding(page);
   const before = await hudValue(page);
   const b = await knobPos(page, 'b');
@@ -146,16 +148,7 @@ test('save a measurement to a record (with tolerance and repeats)', async ({ pag
 
 test('every dock tool shows a reading', async ({ page }) => {
   await skipOnboarding(page);
-  for (const id of [
-    'box',
-    'leapfrog',
-    'caliper',
-    'protractor',
-    'circle',
-    'hex',
-    'rect',
-    'ruler',
-  ]) {
+  for (const id of ['box', 'leapfrog', 'caliper', 'protractor', 'circle', 'hex', 'rect', 'ruler']) {
     await page.getByTestId(`dock-${id}`).click();
     await expect.poll(() => toolKind(page)).toBe(id);
     await expect(page.getByTestId('hud-value')).not.toHaveText('');

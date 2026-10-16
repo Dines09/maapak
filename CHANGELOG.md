@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.4.0 — Phase 3: records, camera, drawing, export (2026-10-16)
+
+- **Records (§9)**
+  - Search, plus project / tag / tool filters and sort.
+  - Duplicate a record, or compare two side by side (Δ per feature; differences larger than the combined uncertainty are highlighted).
+  - Batch / inventory mode: Save goes straight to "Prefix-01, -02, …" with no dialog.
+  - Part-type recipes (bolt, nut, O-ring, washer, gasket, rectangle) with a checklist. "Measure" opens the right tool and saves into the record with the right label (e.g. k1 for head height).
+- **Camera with ghost overlay (§10)**
+  - Rear camera with a torch toggle and a Top / Side / Front picker. The measured shape is drawn as a ghost at true proportions (~65 % of the frame), with a tilt bubble.
+  - A Web Worker scores the match about 11 times a second: grayscale, blur, Sobel edges, chamfer distance transform, chamfer score. A shift / scale / rotation search gives hints ("move left", "move closer", "rotate", "too dark", "blurry").
+  - Green at score ≥ 85 when level and sharp for 400 ms, with haptic + chime and auto-capture of the sharpest of four frames.
+  - The photo stores the ghost→photo transform and mm/px.
+  - The camera is released on leaving.
+- **Gallery fallback.** Pick a photo, then drag / pinch / twist the outline onto the part; ±% buttons fine-tune the scale. The result is the same as a camera capture.
+- **Drawing (§11)**
+  - Vector views come from each tool's parametric model.
+  - ISO 129 style: thin dimension and extension lines (1 mm gap, 2 mm overshoot), 3:1 filled arrowheads, text above the line, Ø / R / AF / ° notation.
+  - Dimensions on the same side are stacked automatically.
+  - Units note and a first/third-angle projection symbol.
+- **Annotated photo.** Dimension lines are drawn on the photo through the ghost alignment.
+- **Export (§12)**
+  - PDF record sheet: annotated photo, vector drawing (svg2pdf), dimension table with tolerance verdicts, notes, and a title block (company, engineer, units, calibration, projection).
+  - JPG / PNG measurement card (1080 × 1350), SVG drawing, CSV (single record or the filtered list), and re-importable JSON with photos.
+  - 1:1 print template (SVG / PDF) with a 100 mm check bar.
+  - Web Share with a download fallback. Hindi text in PDFs is rendered by the browser so it shapes correctly.
+- **Backup / restore.** One `.maapak.zip` (records, calibration profiles, settings, edges, photos), available from Records or Settings.
+- **Settings.** Camera (auto-capture, match threshold, torch, keep original, JPEG quality) and drawing & export (projection, paper, title block). All new strings are in Hindi.
+
 ## 0.3.0 — Light-box UI (2026-10-16)
 
 - **Dimmed surround.** The measured region stays bright and everything outside it is dimmed: between the ruler lines, inside the L × W box, rectangle, hexagon and circle, the O-ring annulus (its hole is dimmed too), and the protractor's angle sector. It can be turned off in Settings → Display.

@@ -10,6 +10,8 @@ import type { Handle, Readout, RenderContext, ToolAction, ToolInstance } from '.
 import { circlePoints, drawCross, drawKnob, drawOutline, drawScale, drawTag, line } from '../../render/draw';
 import { fmtLength } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
+import { ghostFrom, diameter } from '../drawing';
+import type { DrawingEntities, GhostShape } from '../../render/types';
 
 export type CircleMode = 'circle' | 'ring' | 'points';
 export type CirclePreset = 'none' | 'oring' | 'washer' | 'rod';
@@ -542,6 +544,36 @@ export class CircleTool extends BaseTool implements ToolInstance {
         uncertainty: r.uncertainty,
         toolState: this.serialize(),
       }));
+  }
+
+  toDrawing(): DrawingEntities {
+    const s = this.s;
+    const D = 2 * s.r;
+    const ext = s.r + 3;
+    const outline: DrawingEntities['views']['top'] = {
+      outline: [
+        { type: 'circle', center: [0, 0], r: s.r },
+        { type: 'line', a: [-ext, 0], b: [ext, 0], style: 'centre' },
+        { type: 'line', a: [0, -ext], b: [0, ext], style: 'centre' },
+      ],
+      dims: [],
+    };
+    if (s.mode === 'ring') {
+      const off: Vec = sub(s.ci, s.c);
+      outline.outline.push({ type: 'circle', center: off, r: s.ri });
+      outline.dims.push(diameter('outerDiameter', `OD${s.n}`, D, 0, [0, 0], 35));
+      outline.dims.push(diameter('innerDiameter', `ID${s.n}`, 2 * s.ri, 0, off, -35));
+    } else {
+      outline.dims.push(diameter('diameter', `Ø${s.n}`, D, 0, [0, 0], 35));
+    }
+    return { views: { top: outline } };
+  }
+
+  toGhost(): GhostShape {
+    const s = this.s;
+    const paths: { kind: 'circle'; center: Vec; r: number }[] = [{ kind: 'circle', center: [0, 0], r: s.r }];
+    if (s.mode === 'ring') paths.push({ kind: 'circle', center: sub(s.ci, s.c), r: s.ri });
+    return ghostFrom(paths);
   }
 
   serialize(): CircleState {

@@ -24,6 +24,12 @@ const SettingsScreen = lazy(() =>
 const LearnScreen = lazy(() =>
   import('../features/learn/LearnScreen').then((m) => ({ default: m.LearnScreen })),
 );
+const CameraScreen = lazy(() =>
+  import('../features/camera/CameraScreen').then((m) => ({ default: m.CameraScreen })),
+);
+const AlignScreen = lazy(() =>
+  import('../features/camera/AlignScreen').then((m) => ({ default: m.AlignScreen })),
+);
 const WelcomeScreen = lazy(() =>
   import('../features/onboarding/WelcomeScreen').then((m) => ({ default: m.WelcomeScreen })),
 );
@@ -42,10 +48,12 @@ export function App() {
   if (!loaded) return <div className="min-h-dvh bg-slate-950" />;
 
   let screen: React.ReactNode;
-  const [head, id] = route.parts;
+  const [head, id, sub] = route.parts;
   if (!onboarded && !head) screen = <WelcomeScreen />;
   else if (head === 'records') screen = id ? <RecordDetailScreen id={id} /> : <RecordsScreen />;
   else if (head === 'calibrate') screen = <CalibrateScreen />;
+  else if (head === 'camera' && id) screen = <CameraScreen recordId={id} />;
+  else if (head === 'align' && id && sub) screen = <AlignScreen recordId={id} photoId={sub} />;
   else if (head === 'edges') screen = <EdgesScreen />;
   else if (head === 'settings') screen = <SettingsScreen />;
   else if (head === 'learn') screen = <LearnScreen />;

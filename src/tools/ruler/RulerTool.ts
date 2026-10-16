@@ -24,6 +24,8 @@ import i18n from '../../i18n';
 import type { Handle, Readout, RenderContext, ToolAction, ToolInstance } from '../../render/types';
 import { drawKnob, drawMarkerLine, drawScale, drawText, type ScaleKind } from '../../render/draw';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
+import { ghostFrom, spanDrawing } from '../drawing';
+import type { DrawingEntities, GhostShape } from '../../render/types';
 
 export type RulerKind = 'ruler' | 'leapfrog';
 
@@ -450,6 +452,41 @@ export class RulerTool extends BaseTool implements ToolInstance {
         uncertainty: r.uncertainty,
         toolState: this.serialize(),
       }));
+  }
+
+  toDrawing(): DrawingEntities {
+    const [r] = this.readoutsStatic();
+    return spanDrawing('length', r.label, r.value, r.uncertainty);
+  }
+
+  toGhost(): GhostShape | null {
+    if (this.s.tool === 'leapfrog') return null;
+    const L = Math.abs(this.s.b - this.s.a);
+    const h = Math.max(20, L * 0.6);
+    return ghostFrom([
+      {
+        kind: 'polyline',
+        points: [
+          [-L / 2, -h / 2],
+          [-L / 2, h / 2],
+        ],
+      },
+      {
+        kind: 'polyline',
+        points: [
+          [L / 2, -h / 2],
+          [L / 2, h / 2],
+        ],
+      },
+    ]);
+  }
+
+  /** Readouts without the stage (records rebuild tools from saved state). */
+  private readoutsStatic(): { label: string; value: number; uncertainty: number }[] {
+    const s = this.s;
+    const L = Math.abs(s.b - s.a);
+    const total = s.tool === 'leapfrog' ? s.segments.reduce((x, y) => x + y, 0) + L : L;
+    return [{ label: `L${s.n}`, value: total, uncertainty: 0 }];
   }
 
   serialize(): RulerState {

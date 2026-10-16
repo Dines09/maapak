@@ -94,24 +94,43 @@ export interface GhostShape {
   boundsMm: [number, number, number, number];
 }
 
-export interface Entity {
-  type: 'line' | 'circle' | 'arc' | 'text';
+/** Outline entities of a drawing view (mm, part frame, y down like the screen). */
+export type Entity =
+  | { type: 'line'; a: Vec; b: Vec; style?: 'outline' | 'centre' | 'hidden' }
+  | { type: 'polyline'; points: Vec[]; closed: boolean; style?: 'outline' | 'centre' | 'hidden' }
+  | { type: 'circle'; center: Vec; r: number; style?: 'outline' | 'centre' | 'hidden' }
+  | { type: 'arc'; center: Vec; r: number; a0: number; a1: number; style?: 'outline' | 'centre' };
+
+/** A dimension (ISO 129-1 style). The text is built from kind/value/uncertainty and the record label. */
+export interface DimSpec {
+  kind: FeatureKind;
+  label: string;
+  value: number;
+  uncertainty: number;
+  type: 'linear' | 'diameter' | 'radius' | 'angle';
+  /** linear: measured between a and b; the dimension line sits `offset` mm to the left of a→b. */
   a?: Vec;
   b?: Vec;
+  offset?: number;
+  /** diameter / radius */
   center?: Vec;
   r?: number;
-  text?: string;
+  /** leader direction (deg) for diameter / radius text */
+  dirDeg?: number;
+  /** angle: vertex and the two ray directions (deg, screen) */
+  vertex?: Vec;
+  a1?: number;
+  a2?: number;
+  rArc?: number;
 }
 
-export interface DimSpec {
-  measurementLabel: string;
-  a: Vec;
-  b: Vec;
-  offset: number;
+export interface DrawingView {
+  outline: Entity[];
+  dims: DimSpec[];
 }
 
 export interface DrawingEntities {
-  views: Partial<Record<'front' | 'top' | 'side', { outline: Entity[]; dims: DimSpec[] }>>;
+  views: Partial<Record<'front' | 'top' | 'side', DrawingView>>;
 }
 
 /** Services a tool needs from the stage. */

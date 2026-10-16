@@ -20,6 +20,8 @@ import { drawKnob, drawMarkerLine, drawScale, type ScaleKind } from '../../rende
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
 import { at, frameN, frameU, toLocal } from '../frame';
 import { TICK_SCALE } from '../ruler/RulerTool';
+import { ghostFrom, linear, rectPts } from '../drawing';
+import type { DrawingEntities, GhostShape } from '../../render/types';
 
 export interface BoxState {
   v: 1;
@@ -318,6 +320,30 @@ export class BoxTool extends BaseTool implements ToolInstance {
         uncertainty: r.uncertainty,
         toolState: this.serialize(),
       }));
+  }
+
+  toDrawing(): DrawingEntities {
+    const s = this.s;
+    const L = Math.abs(s.x2 - s.x1);
+    const W = Math.abs(s.y2 - s.y1);
+    return {
+      views: {
+        top: {
+          outline: [{ type: 'polyline', points: rectPts(L, W), closed: true }],
+          dims: [
+            linear('length', `L${s.n}`, L, 0, [-L / 2, W / 2], [L / 2, W / 2], -8),
+            linear('width', `W${s.n}`, W, 0, [L / 2, W / 2], [L / 2, -W / 2], -8),
+          ],
+        },
+      },
+    };
+  }
+
+  toGhost(): GhostShape {
+    const s = this.s;
+    return ghostFrom([
+      { kind: 'polyline', points: rectPts(Math.abs(s.x2 - s.x1), Math.abs(s.y2 - s.y1)), closed: true },
+    ]);
   }
 
   serialize(): BoxState {

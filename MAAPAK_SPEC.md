@@ -824,12 +824,12 @@ Reference set: ID-1 card, 150 mm steel rule, known coins, M6/M8/M10 bolts and nu
 - [x] Quick-shape palette (§4.3), tolerance go/no-go (§7.5), repeat & average (§7.7)
 
 ### Phase 3 — Records, camera, drawing, export
-- [ ] Full records: list, search, folders, tags, recipes, compare, batch (§9)
-- [ ] Camera with ghost overlay, tilt bubble, match score, green state, auto-capture, best frame (§10)
-- [ ] Gallery fallback with manual ghost alignment
-- [ ] Annotated photo + 2D drawing with auto-layout dimensions (§11)
-- [ ] Export PDF / JPG / PNG / SVG / CSV / JSON, Web Share, 1:1 print template (§12)
-- [ ] Backup/restore; Hindi strings complete
+- [x] Full records: list, search, folders, tags, recipes, compare, batch (§9)
+- [x] Camera with ghost overlay, tilt bubble, match score, green state, auto-capture, best frame (§10)
+- [x] Gallery fallback with manual ghost alignment
+- [x] Annotated photo + 2D drawing with auto-layout dimensions (§11)
+- [x] Export PDF / JPG / PNG / SVG / CSV / JSON, Web Share, 1:1 print template (§12)
+- [x] Backup/restore; Hindi strings complete
 
 ### Phase 4 — Specialty & sensors
 - [ ] Bolt Wizard, thread pitch gauge, metric-vs-inch detector (§6.6.2, §6.8.1)

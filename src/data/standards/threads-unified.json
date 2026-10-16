@@ -1,0 +1,119 @@
+{
+ "title": "Unified inch screw threads (UNC / UNF)",
+ "unit": "in",
+ "note": "Threads per inch from the Maapak spec §18. Verify against ASME B1.1 before release.",
+ "rows": [
+  {
+   "size": "#4",
+   "dIn": 0.112,
+   "unc": 40,
+   "unf": 48,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch); diameter from the numbered-size rule d = 0.060 + 0.013·N in",
+   "verified": false
+  },
+  {
+   "size": "#6",
+   "dIn": 0.138,
+   "unc": 32,
+   "unf": 40,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch); diameter from the numbered-size rule d = 0.060 + 0.013·N in",
+   "verified": false
+  },
+  {
+   "size": "#8",
+   "dIn": 0.164,
+   "unc": 32,
+   "unf": 36,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch); diameter from the numbered-size rule d = 0.060 + 0.013·N in",
+   "verified": false
+  },
+  {
+   "size": "#10",
+   "dIn": 0.19,
+   "unc": 24,
+   "unf": 32,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch); diameter from the numbered-size rule d = 0.060 + 0.013·N in",
+   "verified": false
+  },
+  {
+   "size": "1/4″",
+   "dIn": 0.25,
+   "unc": 20,
+   "unf": 28,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  },
+  {
+   "size": "5/16″",
+   "dIn": 0.3125,
+   "unc": 18,
+   "unf": 24,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  },
+  {
+   "size": "3/8″",
+   "dIn": 0.375,
+   "unc": 16,
+   "unf": 24,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  },
+  {
+   "size": "7/16″",
+   "dIn": 0.4375,
+   "unc": 14,
+   "unf": 20,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  },
+  {
+   "size": "1/2″",
+   "dIn": 0.5,
+   "unc": 13,
+   "unf": 20,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  },
+  {
+   "size": "9/16″",
+   "dIn": 0.5625,
+   "unc": 12,
+   "unf": 18,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  },
+  {
+   "size": "5/8″",
+   "dIn": 0.625,
+   "unc": 11,
+   "unf": 18,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  },
+  {
+   "size": "3/4″",
+   "dIn": 0.75,
+   "unc": 10,
+   "unf": 16,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  },
+  {
+   "size": "7/8″",
+   "dIn": 0.875,
+   "unc": 9,
+   "unf": 14,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  },
+  {
+   "size": "1″",
+   "dIn": 1.0,
+   "unc": 8,
+   "unf": 12,
+   "source": "Maapak spec §18 (ASME B1.1, UNC/UNF threads per inch)",
+   "verified": false
+  }
+ ]
+}

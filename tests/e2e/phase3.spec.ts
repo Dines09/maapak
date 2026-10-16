@@ -60,7 +60,9 @@ test('gallery photo + manual ghost alignment puts dimensions on the photo', asyn
   await page.goto('./#/records');
   await page.getByRole('button', { name: /Plate-1/ }).click();
   await expect(page.getByTestId('recipe')).toBeVisible();
-  await page.getByTestId('gallery-input').setInputFiles({ name: 'p.png', mimeType: 'image/png', buffer: await testPng(page) });
+  await page
+    .getByTestId('gallery-input')
+    .setInputFiles({ name: 'p.png', mimeType: 'image/png', buffer: await testPng(page) });
   await expect(page.getByTestId('align')).toBeVisible();
   await page.getByTestId('align-save').click();
   await expect(page.getByTestId('annotated-photo')).toBeVisible();
@@ -105,7 +107,10 @@ test('records: CSV of all, backup zip, JSON round trip, compare, batch mode', as
   await expect(page.getByTestId('records-list')).toContainText('Alpha (import)');
 
   // Compare Alpha with Beta.
-  await page.getByRole('button', { name: /^Alpha\b/ }).first().click();
+  await page
+    .getByRole('button', { name: /^Alpha\b/ })
+    .first()
+    .click();
   await page.getByRole('button', { name: 'Compare' }).click();
   await page.getByRole('button', { name: /Beta/ }).click();
   await expect(page.getByTestId('compare')).toContainText('Δ');

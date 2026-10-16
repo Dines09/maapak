@@ -1,0 +1,44 @@
+{
+ "title": "Wire gauges",
+ "note": "SWG values and common cable cross-sections from the Maapak spec §18 / §6.8.3. AWG uses the defining formula (Appendix A).",
+ "swg": [
+  {
+   "swg": 10,
+   "dMm": 3.251
+  },
+  {
+   "swg": 12,
+   "dMm": 2.642
+  },
+  {
+   "swg": 14,
+   "dMm": 2.032
+  },
+  {
+   "swg": 16,
+   "dMm": 1.626
+  },
+  {
+   "swg": 18,
+   "dMm": 1.219
+  },
+  {
+   "swg": 20,
+   "dMm": 0.914
+  },
+  {
+   "swg": 22,
+   "dMm": 0.711
+  }
+ ],
+ "cableMm2": [
+  1,
+  1.5,
+  2.5,
+  4,
+  6,
+  10
+ ],
+ "source": "Maapak spec §18 (SWG), §6.8.3 (cable sizes)",
+ "verified": false
+}

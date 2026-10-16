@@ -92,10 +92,17 @@ export interface CircleFit extends Circle {
   /** max − min of 2·(radial distance) (mm). */
   ovality: number;
   n: number;
+  /** Standard uncertainty of the radius from the fit covariance (grows as the visible arc shrinks). */
+  uR: number;
+  /** Standard uncertainty of the centre (max of x, y). */
+  uC: number;
 }
 
-/** Kåsa start refined with geometric Gauss–Newton: minimise Σ(|p − c| − r)². */
-export function fitCircle(pts: readonly Vec[], iterations = 30): CircleFit | null {
+/**
+ * Kåsa start refined with geometric Gauss–Newton: minimise Σ(|p − c| − r)². `pointU` is the standard
+ * uncertainty of one rim point; σ = max(residual RMS, pointU) scales the covariance (JᵀJ)⁻¹.
+ */
+export function fitCircle(pts: readonly Vec[], iterations = 30, pointU = 0): CircleFit | null {
   if (pts.length < 3) return null;
   let start: Circle | null = pts.length === 3 ? circleFrom3(pts[0], pts[1], pts[2]) : fitCircleKasa(pts);
   if (!start) return null;
@@ -130,12 +137,48 @@ export function fitCircle(pts: readonly Vec[], iterations = 30): CircleFit | nul
   start = { c: [cx, cy], r: Math.abs(r) };
   const dists = pts.map((p) => Math.hypot(p[0] - cx, p[1] - cy));
   const rms = Math.sqrt(dists.reduce((s, d) => s + (d - start!.r) ** 2, 0) / pts.length);
+  // Covariance of (cx, cy, r) ≈ σ² (JᵀJ)⁻¹.
+  const JtJ = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+  ];
+  for (const [x, y] of pts) {
+    const d = Math.hypot(x - cx, y - cy) || 1e-12;
+    const J = [-(x - cx) / d, -(y - cy) / d, -1];
+    for (let i = 0; i < 3; i++) for (let k = 0; k < 3; k++) JtJ[i][k] += J[i] * J[k];
+  }
+  const dof = Math.max(1, pts.length - 3);
+  const sigma2 = Math.max((rms * rms * pts.length) / dof, pointU * pointU);
+  const col = (j: number) =>
+    solve3(
+      JtJ,
+      [0, 1, 2].map((i) => (i === j ? 1 : 0)),
+    );
+  const c0 = col(0);
+  const c1 = col(1);
+  const c2 = col(2);
+  const uR = c2 ? Math.sqrt(Math.max(0, c2[2] * sigma2)) : Infinity;
+  const uC = c0 && c1 ? Math.sqrt(Math.max(0, Math.max(c0[0], c1[1]) * sigma2)) : Infinity;
   return {
     ...start,
     rms,
     ovality: 2 * (Math.max(...dists) - Math.min(...dists)),
     n: pts.length,
+    uR,
+    uC,
   };
+}
+
+/** Angular span (deg) covered by points around a centre — small spans mean an extrapolated circle. */
+export function arcSpan(pts: readonly Vec[], c: Vec): number {
+  const a = pts.map((p) => Math.atan2(p[1] - c[1], p[0] - c[0])).sort((x, y) => x - y);
+  let gap = 0;
+  for (let i = 0; i < a.length; i++) {
+    const next = i + 1 < a.length ? a[i + 1] : a[0] + Math.PI * 2;
+    gap = Math.max(gap, next - a[i]);
+  }
+  return 360 - (gap * 180) / Math.PI;
 }
 
 /** Shoelace formula: A = ½ |Σ (xᵢ·yᵢ₊₁ − xᵢ₊₁·yᵢ)|. */

@@ -1,0 +1,25 @@
+{
+  "title": "ISO metric screw threads: nominal diameter and pitch",
+  "unit": "mm",
+  "note": "Coarse and common fine pitches from the Maapak spec §18 (ISO 261 / ISO 262). Verify before release.",
+  "rows": [
+    { "size": "M1.6", "d": 1.6, "coarse": 0.35, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M2", "d": 2, "coarse": 0.4, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M2.5", "d": 2.5, "coarse": 0.45, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M3", "d": 3, "coarse": 0.5, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M4", "d": 4, "coarse": 0.7, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M5", "d": 5, "coarse": 0.8, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M6", "d": 6, "coarse": 1.0, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M8", "d": 8, "coarse": 1.25, "fine": [1.0], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M10", "d": 10, "coarse": 1.5, "fine": [1.25, 1.0], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M12", "d": 12, "coarse": 1.75, "fine": [1.5, 1.25], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M14", "d": 14, "coarse": 2.0, "fine": [1.5], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M16", "d": 16, "coarse": 2.0, "fine": [1.5], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M18", "d": 18, "coarse": 2.5, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M20", "d": 20, "coarse": 2.5, "fine": [1.5], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M22", "d": 22, "coarse": 2.5, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M24", "d": 24, "coarse": 3.0, "fine": [2.0], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M27", "d": 27, "coarse": 3.0, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false },
+    { "size": "M30", "d": 30, "coarse": 3.5, "fine": [], "source": "Maapak spec §18 (ISO 261)", "verified": false }
+  ]
+}

@@ -3,7 +3,12 @@ import { makeTransform } from '../../src/core/calibration';
 import { lengthUncertainty } from '../../src/core/uncertainty';
 import type { ToolEnv, ToolInstance } from '../../src/render/types';
 import type { Vec } from '../../src/core/types';
-import { CaliperTool, defaultCaliperState, vernierReading, vernierSpec } from '../../src/tools/caliper/CaliperTool';
+import {
+  CaliperTool,
+  defaultCaliperState,
+  vernierReading,
+  vernierSpec,
+} from '../../src/tools/caliper/CaliperTool';
 import { ProtractorTool, defaultProtractorState } from '../../src/tools/protractor/ProtractorTool';
 import { CircleTool, defaultCircleState } from '../../src/tools/circle/CircleTool';
 import { HexTool, defaultHexState } from '../../src/tools/hex/HexTool';
@@ -19,7 +24,13 @@ function env(): ToolEnv {
     bounds: () => bounds,
     placeBounds: () => bounds,
     uncertainty: (L, dir, edges) =>
-      lengthUncertainty({ lengthMm: L, pxPerMm: t.pxPerMmAlong(dir), relCal: 0.001, screenProtector: 'none', edges }).U,
+      lengthUncertainty({
+        lengthMm: L,
+        pxPerMm: t.pxPerMmAlong(dir),
+        relCal: 0.001,
+        screenProtector: 'none',
+        edges,
+      }).U,
     pointU: () => 0.08,
     relCal: () => 0.001,
     tickSnapMm: () => 0,
@@ -74,7 +85,9 @@ describe('vernier caliper', () => {
     drag(c, 'jaw', [u[0] * 12.5 + u[1] * 3, u[1] * 12.5 - u[0] * 3]); // perpendicular part ignored
     expect(c.readouts()[0].value).toBeCloseTo(s0 + 12.5, 12);
     expect(c.readouts()[0].kind).toBe('outerDiameter');
-    c.actions().find((a) => a.id === 'feature')!.run();
+    c.actions()
+      .find((a) => a.id === 'feature')!
+      .run();
     expect(c.readouts()[0].kind).toBe('innerDiameter');
     expect(c.setExactValue('jaw', 30)).toBe(true);
     expect(c.readouts()[0].value).toBe(30);
@@ -107,7 +120,10 @@ describe('protractor', () => {
     p.s.base = 0;
     p.s.phi = 10;
     const V = p.s.vertex;
-    const end: Vec = [V[0] + p.s.arm2 * Math.cos(-10 * (Math.PI / 180)), V[1] + p.s.arm2 * Math.sin(-10 * (Math.PI / 180))];
+    const end: Vec = [
+      V[0] + p.s.arm2 * Math.cos(-10 * (Math.PI / 180)),
+      V[1] + p.s.arm2 * Math.sin(-10 * (Math.PI / 180)),
+    ];
     drag(p, 'arm', [0, p.s.arm2 * 0.5], end); // swing below the baseline
     expect(p.s.phi).toBe(0);
     p.s.mode = 'full';
@@ -119,10 +135,15 @@ describe('protractor', () => {
     p.s.base = 0;
     const V = p.s.vertex;
     const a = (33 * Math.PI) / 180;
-    drag(p, 'arm', [p.s.arm2 * Math.cos(a) - p.s.arm2 * Math.cos(Math.PI / 3), -p.s.arm2 * Math.sin(a) + p.s.arm2 * Math.sin(Math.PI / 3)], [
-      V[0] + p.s.arm2 * Math.cos(Math.PI / 3),
-      V[1] - p.s.arm2 * Math.sin(Math.PI / 3),
-    ]);
+    drag(
+      p,
+      'arm',
+      [
+        p.s.arm2 * Math.cos(a) - p.s.arm2 * Math.cos(Math.PI / 3),
+        -p.s.arm2 * Math.sin(a) + p.s.arm2 * Math.sin(Math.PI / 3),
+      ],
+      [V[0] + p.s.arm2 * Math.cos(Math.PI / 3), V[1] - p.s.arm2 * Math.sin(Math.PI / 3)],
+    );
     expect(p.s.phi).toBe(35);
   });
   it('two-line angle works when the lines meet off-screen', () => {
@@ -240,7 +261,9 @@ describe('polygon', () => {
     p.addVertex();
     expect(p.s.pts).toHaveLength(5);
     expect(p.readouts()[0].value).toBeCloseTo(600, 9);
-    p.actions().find((a) => a.id === 'closed')!.run();
+    p.actions()
+      .find((a) => a.id === 'closed')!
+      .run();
     expect(p.s.closed).toBe(false);
     expect(p.readouts()[0].kind).toBe('length');
   });

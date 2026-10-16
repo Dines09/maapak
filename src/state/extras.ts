@@ -18,7 +18,9 @@ export const useExtras = create<ExtrasStore>((set) => ({
   map: {},
   setTol: (key, tol) => set((s) => ({ map: { ...s.map, [key]: { ...s.map[key], tol } } })),
   addRepeat: (key, v) =>
-    set((s) => ({ map: { ...s.map, [key]: { ...s.map[key], repeats: [...(s.map[key]?.repeats ?? []), v].slice(-10) } } })),
+    set((s) => ({
+      map: { ...s.map, [key]: { ...s.map[key], repeats: [...(s.map[key]?.repeats ?? []), v].slice(-10) } },
+    })),
   clearRepeats: (key) => set((s) => ({ map: { ...s.map, [key]: { ...s.map[key], repeats: undefined } } })),
 }));
 

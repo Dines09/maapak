@@ -147,7 +147,10 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
   fit(b: RectMm): void {
     const s = this.s;
     if (s.mode === 'twoLine') {
-      s.pts = s.pts.map((p) => [clamp(p[0], b.x, b.x + b.w), clamp(p[1], b.y, b.y + b.h)]) as ProtractorState['pts'];
+      s.pts = s.pts.map((p) => [
+        clamp(p[0], b.x, b.x + b.w),
+        clamp(p[1], b.y, b.y + b.h),
+      ]) as ProtractorState['pts'];
       return;
     }
     for (let i = 0; i < 25; i++) {
@@ -214,7 +217,8 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
     const d = sub(p, s.vertex);
     const r = Math.hypot(d[0], d[1]);
     const a = normAngle(s.base - rad2deg(Math.atan2(d[1], d[0])));
-    if (r <= s.R && (s.mode === 'full' || (a >= -2 && a <= 182))) return { id: 'body', kind: 'body', posMm: p };
+    if (r <= s.R && (s.mode === 'full' || (a >= -2 && a <= 182)))
+      return { id: 'body', kind: 'body', posMm: p };
     return null;
   }
 
@@ -340,25 +344,87 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
       const th = this.lineAngle();
       const U = angleUncertaintyDeg(u, [dist(a, b), dist(c, d)]);
       return [
-        { label: `A${s.n}`, kind: 'angle', value: th, uncertainty: U, primary: true, unit: 'angle', nameKey: 'readout.angle' },
-        { label: `A${s.n}′`, kind: 'angle', value: 180 - th, uncertainty: U, unit: 'angle', nameKey: 'readout.supplementary' },
+        {
+          label: `A${s.n}`,
+          kind: 'angle',
+          value: th,
+          uncertainty: U,
+          primary: true,
+          unit: 'angle',
+          nameKey: 'readout.angle',
+        },
+        {
+          label: `A${s.n}′`,
+          kind: 'angle',
+          value: 180 - th,
+          uncertainty: U,
+          unit: 'angle',
+          nameKey: 'readout.supplementary',
+        },
       ];
     }
     const U = angleUncertaintyDeg(u, [s.arm1, s.arm2]);
     const out: Readout[] = [
-      { label: `A${s.n}`, kind: 'angle', value: s.phi, uncertainty: U, primary: true, unit: 'angle', nameKey: 'readout.angle' },
+      {
+        label: `A${s.n}`,
+        kind: 'angle',
+        value: s.phi,
+        uncertainty: U,
+        primary: true,
+        unit: 'angle',
+        nameKey: 'readout.angle',
+      },
     ];
-    if (s.phi <= 90) out.push({ label: 'c', kind: 'angle', value: 90 - s.phi, uncertainty: U, unit: 'angle', nameKey: 'readout.complementary' });
-    if (s.phi <= 180) out.push({ label: 's', kind: 'angle', value: 180 - s.phi, uncertainty: U, unit: 'angle', nameKey: 'readout.supplementary' });
-    out.push({ label: 'r', kind: 'angle', value: 360 - s.phi, uncertainty: U, unit: 'angle', nameKey: 'readout.reflex' });
+    if (s.phi <= 90)
+      out.push({
+        label: 'c',
+        kind: 'angle',
+        value: 90 - s.phi,
+        uncertainty: U,
+        unit: 'angle',
+        nameKey: 'readout.complementary',
+      });
+    if (s.phi <= 180)
+      out.push({
+        label: 's',
+        kind: 'angle',
+        value: 180 - s.phi,
+        uncertainty: U,
+        unit: 'angle',
+        nameKey: 'readout.supplementary',
+      });
+    out.push({
+      label: 'r',
+      kind: 'angle',
+      value: 360 - s.phi,
+      uncertainty: U,
+      unit: 'angle',
+      nameKey: 'readout.reflex',
+    });
     const dir2 = ccw(s.base, s.phi);
-    out.push({ label: `L${s.n}`, kind: 'length', value: s.arm2, uncertainty: this.env.uncertainty(s.arm2, dir2, 2), unit: 'length', nameKey: 'readout.arm' });
+    out.push({
+      label: `L${s.n}`,
+      kind: 'length',
+      value: s.arm2,
+      uncertainty: this.env.uncertainty(s.arm2, dir2, 2),
+      unit: 'length',
+      nameKey: 'readout.arm',
+    });
     return out;
   }
 
   toMeasurements(): ToolMeasurement[] {
     const [r] = this.readouts();
-    return [{ tool: this.tool, kind: r.kind, label: r.label, value: r.value, uncertainty: r.uncertainty, toolState: this.serialize() }];
+    return [
+      {
+        tool: this.tool,
+        kind: r.kind,
+        label: r.label,
+        value: r.value,
+        uncertainty: r.uncertainty,
+        toolState: this.serialize(),
+      },
+    ];
   }
 
   serialize(): ProtractorState {
@@ -426,7 +492,12 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
     for (let k = 0; k <= (s.mode === 'full' ? 350 : 180); k += 10) {
       const d = ccw(s.base, k);
       drawText(rc, String(k), add(V, scale(d, s.R - 5.4)), d, { sizeMm: 2, color: ink });
-      if (s.mode === 'half') drawText(rc, String(180 - k), add(V, scale(d, s.R - 8.6)), d, { sizeMm: 1.6, color: ink, weight: 500 });
+      if (s.mode === 'half')
+        drawText(rc, String(180 - k), add(V, scale(d, s.R - 8.6)), d, {
+          sizeMm: 1.6,
+          color: ink,
+          weight: 500,
+        });
     }
 
     // Baseline across the diameter and centre crosshair.
@@ -450,7 +521,18 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
       drawMarkerLine(rc, V, add(V, scale(dir, len)), add(V, scale(dir, len)), color);
       const nn: Vec = [dir[1], -dir[0]];
       ctx.save();
-      drawScale(rc, { zero: V, dir, normal: nn, from: 0, to: len, kind: 'mm', ink: color, textUp: nn });
+      drawScale(rc, {
+        zero: V,
+        dir,
+        normal: nn,
+        from: 0,
+        to: len,
+        kind: 'mm',
+        ink: color,
+        textUp: nn,
+        tickScale: 0.5,
+        labelSize: 0,
+      });
       ctx.restore();
     }
 
@@ -470,8 +552,18 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
     if (!rc.inLoupe) {
       const [r] = this.readouts();
       const mid = ccw(s.base, s.phi / 2);
-      drawTag(rc, `${r.label} ${fmtAngle(r.value, r.uncertainty)}`, add(V, scale(mid, r0 + 5)), n, rc.theme.ink, rc.theme.bg);
-      drawKnob(rc, this.baseEnd(), rc.theme.accent, { active: rc.activeHandleId === 'base', glyph: 'rotate' });
+      drawTag(
+        rc,
+        `${r.label} ${fmtAngle(r.value, r.uncertainty)}`,
+        add(V, scale(mid, r0 + 5)),
+        n,
+        rc.theme.ink,
+        rc.theme.bg,
+      );
+      drawKnob(rc, this.baseEnd(), rc.theme.accent, {
+        active: rc.activeHandleId === 'base',
+        glyph: 'rotate',
+      });
       drawKnob(rc, this.armEnd(), rc.theme.accent2, { active: rc.activeHandleId === 'arm', glyph: 'rotate' });
       drawKnob(rc, V, '#334155', { active: rc.activeHandleId === 'vtx' });
     }
@@ -507,9 +599,22 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
     const X = lineIntersection(s.pts[0], sub(s.pts[1], s.pts[0]), s.pts[2], sub(s.pts[3], s.pts[2]));
     if (!rc.inLoupe) {
       const tagAt: Vec =
-        X && inRect(X, b) ? add(X, [0, -6]) : scale(add(add(s.pts[0], s.pts[1]), add(s.pts[2], s.pts[3])), 0.25);
-      drawTag(rc, `${r.label} ${fmtAngle(r.value, r.uncertainty)}`, tagAt, [0, -1], rc.theme.ink, rc.theme.bg);
-      s.pts.forEach((p, i) => drawKnob(rc, p, i < 2 ? rc.theme.accent : rc.theme.accent2, { active: rc.activeHandleId === `p${i}` }));
+        X && inRect(X, b)
+          ? add(X, [0, -6])
+          : scale(add(add(s.pts[0], s.pts[1]), add(s.pts[2], s.pts[3])), 0.25);
+      drawTag(
+        rc,
+        `${r.label} ${fmtAngle(r.value, r.uncertainty)}`,
+        tagAt,
+        [0, -1],
+        rc.theme.ink,
+        rc.theme.bg,
+      );
+      s.pts.forEach((p, i) =>
+        drawKnob(rc, p, i < 2 ? rc.theme.accent : rc.theme.accent2, {
+          active: rc.activeHandleId === `p${i}`,
+        }),
+      );
     }
   }
 }

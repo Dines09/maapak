@@ -35,7 +35,7 @@ function env(over: Partial<ToolEnv> = {}): ToolEnv {
   };
 }
 
-function ruler(kind: 'ruler' | 'splitRuler' | 'leapfrog' = 'ruler', e = env()): RulerTool {
+function ruler(kind: 'ruler' | 'leapfrog' = 'ruler', e = env()): RulerTool {
   const r = new RulerTool(defaultRulerState(kind));
   r.attach(e);
   r.fit(e.bounds());
@@ -112,15 +112,24 @@ describe('ruler tool', () => {
     drag(r, 'b', [0, 0], [2.2, 0]);
     expect(r.s.b).toBe(12);
   });
-  it('snaps rotation to 90° and fits after rotate', () => {
+  it('both ends extend in any direction; direction snaps to 90°; markers stay on the part', () => {
     const r = ruler();
-    r.rotateBy(89, r.center());
-    r.fit(env().bounds());
-    const h = { id: 'rot', kind: 'rotate' as const, posMm: [0, 0] as Vec };
-    const c = r.center();
-    r.onDragStart(h, [c[0] + 10, c[1]]);
-    r.onDragMove(h, [c[0] + 10 * Math.cos(0.01), c[1] + 10 * Math.sin(0.01)], false);
+    const A = r.P(0);
+    const B = r.P(r.s.length);
+    const h = { id: 'end', kind: 'point' as const, posMm: B };
+    r.onDragStart(h, B);
+    r.onDragMove(h, [A[0] + 0.6, A[1] + 50], false); // almost straight down
     r.onDragEnd(h);
+    expect(r.s.angle).toBe(90);
+    expect(r.P(0)[0]).toBeCloseTo(A[0], 12);
+    expect(r.P(0)[1]).toBeCloseTo(A[1], 12);
+    // Now pull the start end upwards: the ruler grows the other way.
+    const L1 = r.s.length;
+    const s = { id: 'start', kind: 'point' as const, posMm: A };
+    r.onDragStart(s, A);
+    r.onDragMove(s, [A[0], A[1] - 20], false);
+    r.onDragEnd(s);
+    expect(r.s.length).toBeCloseTo(L1 + 20, 6);
     expect(r.s.angle).toBe(90);
   });
   it('set exact value and zero', () => {
@@ -147,8 +156,8 @@ describe('ruler tool', () => {
     expect(four.uncertainty).toBeGreaterThanOrEqual(one.uncertainty * 1.5);
   });
   it('round-trips through the registry', () => {
-    const r = ruler('splitRuler');
-    const copy = TOOL_REGISTRY.splitRuler!.deserialize(r.serialize());
+    const r = ruler('leapfrog');
+    const copy = TOOL_REGISTRY.leapfrog!.deserialize(r.serialize());
     expect(copy.serialize()).toEqual(r.serialize());
     expect(() => TOOL_REGISTRY.ruler!.deserialize({})).toThrow();
   });

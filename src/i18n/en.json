@@ -20,9 +20,8 @@
   "tool": {
     "ruler": "Ruler",
     "gapRuler": "Gap",
-    "splitRuler": "Split",
     "leapfrog": "Leapfrog",
-    "free": "T-square",
+    "free": "L × W",
     "calLines": "Calibration lines",
     "caliper": "Vernier caliper",
     "protractor": "Protractor",
@@ -43,11 +42,12 @@
     "protractorShort": "Angle",
     "circleShort": "Circle",
     "hexShort": "Hex",
-    "rectShort": "Rect"
+    "rectShort": "Rect",
+    "box": "L × W"
   },
   "dock": {
     "label": "Measuring tools",
-    "loupe": "Loupe",
+    "loupe": "Lens",
     "more": "More",
     "comingSoon": "Coming in later phases",
     "maxTools": "At most {{n}} rulers on screen",
@@ -57,8 +57,6 @@
     "rotate90": "Rotate 90°",
     "flip": "Flip ⇄",
     "zeroAtA": "Zero at A",
-    "bottomMetric": "Bottom: mm ←",
-    "bottomInch": "Bottom: inch",
     "mark": "Mark ▸",
     "undoMark": "Undo mark",
     "resetChain": "Reset chain",
@@ -130,7 +128,8 @@
   "conf": {
     "estimate": "Not calibrated",
     "good": "Calibrated · Good",
-    "excellent": "Calibrated · Excellent"
+    "excellent": "Calibrated · Excellent",
+    "short": "Cal"
   },
   "calMethod": {
     "card": "ID-1 card",
@@ -155,14 +154,16 @@
     "blockedHint": "Measuring is disabled until the display scale matches the calibration.",
     "locked": "Tools locked",
     "lockedHint": "Tools are locked — tap the lock to move them.",
-    "precision": "Precision ×0.1"
+    "precision": "Precision ×0.1",
+    "precisionShort": "precision"
   },
   "hud": {
     "copy": "Copy",
     "copied": "Copied",
     "speak": "Speak",
     "speakUnsupported": "Speech is not available on this device",
-    "add": "Add"
+    "add": "Add",
+    "toggle": "Show or hide reading details"
   },
   "menu": {
     "setZero": "Set as zero",
@@ -260,11 +261,11 @@
   },
   "tour": {
     "title": "Quick tour",
-    "s1": "Place the part on the screen, against the ruler's edge. Drag the round knobs so the thin lines touch the part's ends.",
-    "s2": "While dragging, a loupe shows the edge magnified. Hold a second finger anywhere for precision mode (handle moves at 1/10 speed).",
-    "s3": "Long-press a knob to set it as zero or type an exact value. Use Nudge for single-pixel steps.",
-    "s4": "Black part on a black screen? Tap the contrast button or open Background to pick the best colour automatically.",
-    "s5": "Tap Save to store the reading in a record with a photo. Lock freezes the tools while you place or remove the part.",
+    "s1": "Put the part on the screen. Drag the round knobs so the thick lines touch the part’s edges. Drag the small ⇔ knobs at the ends to stretch or turn the scale in any direction.",
+    "s2": "While you drag, a lens magnifies the edge and the menus fade away. Hold a second finger anywhere for precision (×0.1).",
+    "s3": "The reading sits in a small pill. Tap it for ZERO, HOLD, tolerance, repeat & average and Save.",
+    "s4": "Hold two fingers still on empty glass to drop two parallel rulers there. L × W puts four lines around a part for length, width and area.",
+    "s5": "The side buttons: undo, lock, contrast, lens, arrow pad, tool options, focus, save. A ⚠ at the top means not calibrated yet.",
     "next": "Next",
     "skip": "Skip",
     "done": "Start measuring"
@@ -360,8 +361,8 @@
     "largeHandles": "Large handles",
     "largeHandlesHint": "For gloves and field use (64 px targets).",
     "leftHanded": "Left-handed layout",
-    "loupe": "Loupe while dragging",
-    "loupeZoom": "Loupe magnification",
+    "loupe": "Lens while dragging",
+    "loupeZoom": "Lens magnification",
     "behaviour": "Behaviour",
     "snapTicks": "Snap markers to ticks",
     "snapHalf": "Snap to 0.5 mm (metric)",
@@ -387,7 +388,9 @@
     "clear": "Clear all data",
     "confirmClear": "Delete all records, calibrations and settings on this device?",
     "about": "About",
-    "privacy": "Everything stays on this device. No account, no analytics."
+    "privacy": "Everything stays on this device. No account, no analytics.",
+    "canvasLabels": "Value labels on the canvas",
+    "canvasLabelsHint": "Off keeps the screen clean; the reading pill always shows the value."
   },
   "learn": {
     "accuracy": {
@@ -404,7 +407,7 @@
     },
     "tools": {
       "title": "Ruler modes",
-      "body": "Ruler: single scale with two markers.\nGap: two parallel rulers — the gap is the width, the markers give the length (L × W in one setup).\nSplit: metric on top, inch below, shared cursor lines (or metric numbered from both ends).\nLeapfrog: for parts longer than the screen — mark, move the phone, align zero to the mark, repeat; uncertainty grows as √N.\nT-square: up to 4 rulers that snap parallel or at 90°."
+      "body": "Ruler: thin scale with two markers; drag either end to extend it in any direction.\nL × W: four lines around the part give length, width and area at once.\nGap: two parallel rulers — the gap is the width (or hold two fingers on the glass).\nLeapfrog: for parts longer than the screen — tap MARK, pencil-mark the part at line ②, slide the phone so line ① sits on that mark, repeat; uncertainty grows as √N."
     },
     "shield": {
       "title": "Ghost touches",
@@ -526,5 +529,29 @@
     "add": "+ Vertex",
     "remove": "− Vertex",
     "closed": "Closed"
+  },
+  "rail": {
+    "collapse": "Hide buttons",
+    "expand": "Show buttons",
+    "toolOptions": "Tool options"
+  },
+  "gesture": {
+    "gapPlaced": "Gap rulers placed at your two fingers",
+    "hint": "Tip: hold two fingers still on empty glass for a moment to drop two parallel rulers right there. Drag either end of a ruler to extend or turn it."
+  },
+  "leap": {
+    "mark": "MARK",
+    "markHint": "pencil mark at line ②, then slide",
+    "undo": "Undo",
+    "reset": "Reset",
+    "segments": "{{n}} marked",
+    "startHere": "①",
+    "markHere": "②"
+  },
+  "pad": {
+    "tool": "Tool",
+    "lens": "Lens",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out"
   }
 }

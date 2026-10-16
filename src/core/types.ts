@@ -21,6 +21,7 @@ export type ToolId =
   | 'wireGauge'
   | 'grid'
   | 'level'
+  | 'box'
   | 'calLines';
 
 export type FeatureKind =

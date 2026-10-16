@@ -3,11 +3,23 @@ import type { ToolDefinition, ToolInstance } from '../render/types';
 import { RulerTool, defaultRulerState, isRulerState, type RulerKind } from './ruler/RulerTool';
 import { GapRulerTool, defaultGapState, type GapState } from './gapRuler/GapRulerTool';
 import { CaliperTool, defaultCaliperState, isCaliperState } from './caliper/CaliperTool';
-import { ProtractorTool, defaultProtractorState, isProtractorState, type ProtractorMode } from './protractor/ProtractorTool';
-import { CircleTool, defaultCircleState, isCircleState, type CircleMode, type CirclePreset } from './circle/CircleTool';
+import {
+  ProtractorTool,
+  defaultProtractorState,
+  isProtractorState,
+  type ProtractorMode,
+} from './protractor/ProtractorTool';
+import {
+  CircleTool,
+  defaultCircleState,
+  isCircleState,
+  type CircleMode,
+  type CirclePreset,
+} from './circle/CircleTool';
 import { HexTool, defaultHexState, isHexState } from './hex/HexTool';
 import { RectTool, defaultRectState, isRectState } from './rect/RectTool';
 import { PolygonTool, defaultPolygonState, isPolygonState } from './polygon/PolygonTool';
+import { BoxTool, defaultBoxState, isBoxState } from './box/BoxTool';
 
 type Init = Partial<Record<string, unknown>> | undefined;
 const num = (init: Init, k: string, d: number) => Number(init?.[k] ?? d);
@@ -34,8 +46,14 @@ function guarded<T>(ok: (x: unknown) => x is T, make: (s: T) => ToolInstance) {
 
 export const TOOL_REGISTRY: Partial<Record<ToolId, ToolDefinition>> = {
   ruler: rulerDef('ruler', 'ruler', 'tool.ruler'),
-  splitRuler: rulerDef('splitRuler', 'split', 'tool.splitRuler'),
   leapfrog: rulerDef('leapfrog', 'leapfrog', 'tool.leapfrog'),
+  box: {
+    tool: 'box',
+    icon: 'box',
+    labelKey: 'tool.box',
+    create: (init) => new BoxTool(defaultBoxState(num(init, 'n', 1))),
+    deserialize: guarded(isBoxState, (s) => new BoxTool(s)),
+  },
   gapRuler: {
     tool: 'gapRuler',
     icon: 'gap',
@@ -67,7 +85,11 @@ export const TOOL_REGISTRY: Partial<Record<ToolId, ToolDefinition>> = {
     labelKey: 'tool.circle',
     create: (init) =>
       new CircleTool(
-        defaultCircleState(num(init, 'n', 1), (init?.mode as CircleMode) ?? 'circle', (init?.preset as CirclePreset) ?? 'none'),
+        defaultCircleState(
+          num(init, 'n', 1),
+          (init?.mode as CircleMode) ?? 'circle',
+          (init?.preset as CirclePreset) ?? 'none',
+        ),
       ),
     deserialize: guarded(isCircleState, (s) => new CircleTool(s)),
   },
@@ -75,7 +97,8 @@ export const TOOL_REGISTRY: Partial<Record<ToolId, ToolDefinition>> = {
     tool: 'hex',
     icon: 'hex',
     labelKey: 'tool.hex',
-    create: (init) => new HexTool(defaultHexState(num(init, 'n', 1), init?.mode === 'square' ? 'square' : 'hex')),
+    create: (init) =>
+      new HexTool(defaultHexState(num(init, 'n', 1), init?.mode === 'square' ? 'square' : 'hex')),
     deserialize: guarded(isHexState, (s) => new HexTool(s)),
   },
   rect: {

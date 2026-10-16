@@ -1,7 +1,20 @@
 // Hex overlay (§6.6.1): regular hexagon (or square nut) with a squeeze handle on every flat and a rotation
 // handle. Readouts AF, AC (= AF × 2/√3) or diagonal (= AF × √2), and the nearest spanner sizes.
 import type { Vec } from '../../core/types';
-import { add, dirOf, dist, dot, fitShift, normAngle, rad2deg, rotateAbout, scale, snapAngle, sub, type RectMm } from '../../core/geometry';
+import {
+  add,
+  dirOf,
+  dist,
+  dot,
+  fitShift,
+  normAngle,
+  rad2deg,
+  rotateAbout,
+  scale,
+  snapAngle,
+  sub,
+  type RectMm,
+} from '../../core/geometry';
 import { acrossCorners, pointInPolygon, squareDiagonal } from '../../core/geometry/fit';
 import { suggestWrenches, metricOrInch } from '../../core/standards/hex';
 import { roundUpOneSig } from '../../core/uncertainty';
@@ -29,7 +42,18 @@ export interface HexState {
 const KO = 6;
 
 export function defaultHexState(n = 1, mode: 'hex' | 'square' = 'hex'): HexState {
-  return { v: 1, id: newId('hex'), tool: 'hex', n, placed: false, mode, c: [0, 0], angle: 0, af: 24, last: 0 };
+  return {
+    v: 1,
+    id: newId('hex'),
+    tool: 'hex',
+    n,
+    placed: false,
+    mode,
+    c: [0, 0],
+    angle: 0,
+    af: 24,
+    last: 0,
+  };
 }
 
 export class HexTool extends BaseTool implements ToolInstance {
@@ -83,7 +107,9 @@ export class HexTool extends BaseTool implements ToolInstance {
 
   outline(): Vec[] {
     const s = this.s;
-    const knobs = Array.from({ length: this.sides() }, (_, k) => add(s.c, scale(this.flatDir(k), s.af / 2 + KO)));
+    const knobs = Array.from({ length: this.sides() }, (_, k) =>
+      add(s.c, scale(this.flatDir(k), s.af / 2 + KO)),
+    );
     return [...this.corners(), ...knobs, this.rotKnob()];
   }
 
@@ -125,7 +151,8 @@ export class HexTool extends BaseTool implements ToolInstance {
         best = { id, kind, posMm: q };
       }
     };
-    for (let k = 0; k < this.sides(); k++) consider(`f${k}`, add(s.c, scale(this.flatDir(k), s.af / 2 + KO)), 'edge');
+    for (let k = 0; k < this.sides(); k++)
+      consider(`f${k}`, add(s.c, scale(this.flatDir(k), s.af / 2 + KO)), 'edge');
     consider('rot', this.rotKnob(), 'rotate');
     if (best) return best;
     if (pointInPolygon(p, this.corners())) return { id: 'body', kind: 'body', posMm: p };
@@ -135,7 +162,13 @@ export class HexTool extends BaseTool implements ToolInstance {
   onDragStart(h: Handle, p: Vec): void {
     const m = /^f(\d)$/.exec(h.id);
     if (m) this.s.last = Number(m[1]);
-    this.drag = { id: h.id, p0: p, s0: structuredClone(this.s), a0: rad2deg(Math.atan2(p[1] - this.s.c[1], p[0] - this.s.c[0])), snapped: null };
+    this.drag = {
+      id: h.id,
+      p0: p,
+      s0: structuredClone(this.s),
+      a0: rad2deg(Math.atan2(p[1] - this.s.c[1], p[0] - this.s.c[0])),
+      snapped: null,
+    };
   }
 
   onDragMove(h: Handle, p: Vec, _precision = false): void {
@@ -187,8 +220,16 @@ export class HexTool extends BaseTool implements ToolInstance {
   actions(): ToolAction[] {
     const s = this.s;
     return [
-      { id: 'mode', labelKey: s.mode === 'hex' ? 'hex.toSquare' : 'hex.toHex', run: () => (s.mode = s.mode === 'hex' ? 'square' : 'hex') },
-      { id: 'rot30', labelKey: s.mode === 'hex' ? 'hex.rotate30' : 'hex.rotate45', run: () => this.rotateBy(this.step() / 2, s.c) },
+      {
+        id: 'mode',
+        labelKey: s.mode === 'hex' ? 'hex.toSquare' : 'hex.toHex',
+        run: () => (s.mode = s.mode === 'hex' ? 'square' : 'hex'),
+      },
+      {
+        id: 'rot30',
+        labelKey: s.mode === 'hex' ? 'hex.rotate30' : 'hex.rotate45',
+        run: () => this.rotateBy(this.step() / 2, s.c),
+      },
     ];
   }
 
@@ -208,16 +249,44 @@ export class HexTool extends BaseTool implements ToolInstance {
     if (sugg.some((c) => !c.verified)) notes.push(t('hex.unverified'));
     const second =
       s.mode === 'hex'
-        ? { label: `AC${s.n}`, kind: 'acrossCorners' as const, value: acrossCorners(s.af), uncertainty: roundUpOneSig((U * 2) / Math.sqrt(3)), nameKey: 'kind.acrossCorners' }
-        : { label: `D${s.n}`, kind: 'length' as const, value: squareDiagonal(s.af), uncertainty: roundUpOneSig(U * Math.SQRT2), nameKey: 'readout.diagonal' };
+        ? {
+            label: `AC${s.n}`,
+            kind: 'acrossCorners' as const,
+            value: acrossCorners(s.af),
+            uncertainty: roundUpOneSig((U * 2) / Math.sqrt(3)),
+            nameKey: 'kind.acrossCorners',
+          }
+        : {
+            label: `D${s.n}`,
+            kind: 'length' as const,
+            value: squareDiagonal(s.af),
+            uncertainty: roundUpOneSig(U * Math.SQRT2),
+            nameKey: 'readout.diagonal',
+          };
     return [
-      { label: `AF${s.n}`, kind: 'acrossFlats', value: s.af, uncertainty: U, primary: true, unit: 'length', nameKey: 'kind.acrossFlats', notes },
+      {
+        label: `AF${s.n}`,
+        kind: 'acrossFlats',
+        value: s.af,
+        uncertainty: U,
+        primary: true,
+        unit: 'length',
+        nameKey: 'kind.acrossFlats',
+        notes,
+      },
       { ...second, unit: 'length' },
     ];
   }
 
   toMeasurements(): ToolMeasurement[] {
-    return this.readouts().map((r) => ({ tool: this.tool, kind: r.kind, label: r.label, value: r.value, uncertainty: r.uncertainty, toolState: this.serialize() }));
+    return this.readouts().map((r) => ({
+      tool: this.tool,
+      kind: r.kind,
+      label: r.label,
+      value: r.value,
+      uncertainty: r.uncertainty,
+      toolState: this.serialize(),
+    }));
   }
 
   serialize(): HexState {
@@ -246,7 +315,14 @@ export class HexTool extends BaseTool implements ToolInstance {
     if (rc.inLoupe) return;
     const [r] = this.readouts();
     const perp = dirOf(s.angle + 90);
-    drawTag(rc, `${r.label} ${fmtLength(r.value, r.uncertainty, rc.unit, rc.fractionDen)}`, add(s.c, scale(perp, Math.min(s.af * 0.18, 6))), [0, -1], rc.theme.ink, rc.theme.bg);
+    drawTag(
+      rc,
+      `${r.label} ${fmtLength(r.value, r.uncertainty, rc.unit, rc.fractionDen)}`,
+      add(s.c, scale(perp, Math.min(s.af * 0.18, 6))),
+      [0, -1],
+      rc.theme.ink,
+      rc.theme.bg,
+    );
     for (let k = 0; k < this.sides(); k++) {
       const f = add(s.c, scale(this.flatDir(k), s.af / 2));
       const q = add(s.c, scale(this.flatDir(k), s.af / 2 + KO));

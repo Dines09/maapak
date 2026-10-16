@@ -56,8 +56,18 @@ function group(
 export const METRIC_ROWS = metric.rows as StandardRow[];
 export const INCH_ROWS = inch.rows as StandardRow[];
 
-const METRIC = group(METRIC_ROWS, (af) => af, (r) => `${r.af} mm`, 'metric');
-const INCH = group(INCH_ROWS, (af) => af * MM_PER_INCH, (r) => r.afLabel ?? `${r.af}″`, 'inch');
+const METRIC = group(
+  METRIC_ROWS,
+  (af) => af,
+  (r) => `${r.af} mm`,
+  'metric',
+);
+const INCH = group(
+  INCH_ROWS,
+  (af) => af * MM_PER_INCH,
+  (r) => r.afLabel ?? `${r.af}″`,
+  'inch',
+);
 
 /** Nearest spanner sizes per system, best first within each system. */
 export function suggestWrenches(afMm: number, U: number, perSystem = 2): WrenchCandidate[] {

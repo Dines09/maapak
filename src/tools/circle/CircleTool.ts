@@ -36,7 +36,11 @@ const KO = 6;
 const DIRS: Record<string, Vec> = { E: [1, 0], W: [-1, 0], N: [0, -1], S: [0, 1] };
 const DIAG: Vec = norm([1, -1]);
 
-export function defaultCircleState(n = 1, mode: CircleMode = 'circle', preset: CirclePreset = 'none'): CircleState {
+export function defaultCircleState(
+  n = 1,
+  mode: CircleMode = 'circle',
+  preset: CirclePreset = 'none',
+): CircleState {
   return {
     v: 1,
     id: newId('cir'),
@@ -155,7 +159,9 @@ export class CircleTool extends BaseTool implements ToolInstance {
     if (s.mode === 'points') {
       return s.pts.map((p, i) => [`p${i}`, add(p, scale(norm(sub(p, s.c)), KO))] as [string, Vec]);
     }
-    const out: [string, Vec][] = Object.entries(DIRS).map(([k, d]) => [k, add(s.c, scale(d, s.r + KO))] as [string, Vec]);
+    const out: [string, Vec][] = Object.entries(DIRS).map(
+      ([k, d]) => [k, add(s.c, scale(d, s.r + KO))] as [string, Vec],
+    );
     out.push(['R', add(s.c, scale(DIAG, s.r + KO))]);
     if (s.mode === 'ring') {
       const ko = Math.min(KO, s.ri * 0.55);
@@ -341,10 +347,39 @@ export class CircleTool extends BaseTool implements ToolInstance {
       const cs = (D - d) / 2;
       const odKind: FeatureKind = 'outerDiameter';
       return [
-        { label: `OD${s.n}`, kind: odKind, value: D, uncertainty: UD, primary: true, unit: 'length', nameKey: 'kind.outerDiameter' },
-        { label: `ID${s.n}`, kind: 'innerDiameter', value: d, uncertainty: Ud, unit: 'length', nameKey: 'kind.innerDiameter' },
-        { label: `CS${s.n}`, kind: 'crossSection', value: cs, uncertainty: roundUpOneSig(Math.hypot(UD, Ud) / 2), unit: 'length', nameKey: 'kind.crossSection' },
-        { label: 'Øm', kind: 'diameter', value: (D + d) / 2, uncertainty: roundUpOneSig(Math.hypot(UD, Ud) / 2), unit: 'length', nameKey: 'readout.meanDiameter' },
+        {
+          label: `OD${s.n}`,
+          kind: odKind,
+          value: D,
+          uncertainty: UD,
+          primary: true,
+          unit: 'length',
+          nameKey: 'kind.outerDiameter',
+        },
+        {
+          label: `ID${s.n}`,
+          kind: 'innerDiameter',
+          value: d,
+          uncertainty: Ud,
+          unit: 'length',
+          nameKey: 'kind.innerDiameter',
+        },
+        {
+          label: `CS${s.n}`,
+          kind: 'crossSection',
+          value: cs,
+          uncertainty: roundUpOneSig(Math.hypot(UD, Ud) / 2),
+          unit: 'length',
+          nameKey: 'kind.crossSection',
+        },
+        {
+          label: 'Øm',
+          kind: 'diameter',
+          value: (D + d) / 2,
+          uncertainty: roundUpOneSig(Math.hypot(UD, Ud) / 2),
+          unit: 'length',
+          nameKey: 'readout.meanDiameter',
+        },
         {
           label: 'AR',
           kind: 'area',
@@ -353,7 +388,18 @@ export class CircleTool extends BaseTool implements ToolInstance {
           unit: 'area',
           nameKey: 'readout.annulus',
         },
-        ...(s.concentric ? [] : [{ label: 'e', kind: 'length' as const, value: dist(s.c, s.ci), uncertainty: UD, unit: 'length' as const, nameKey: 'readout.eccentricity' }]),
+        ...(s.concentric
+          ? []
+          : [
+              {
+                label: 'e',
+                kind: 'length' as const,
+                value: dist(s.c, s.ci),
+                uncertainty: UD,
+                unit: 'length' as const,
+                nameKey: 'readout.eccentricity',
+              },
+            ]),
       ];
     }
     let UD = U(D);
@@ -363,25 +409,79 @@ export class CircleTool extends BaseTool implements ToolInstance {
       const f = fitCircle(s.pts);
       if (f) {
         UD = roundUpOneSig(Math.hypot(UD, 4 * f.rms * Math.sqrt(2 / f.n)));
-        extra.push({ label: 'ov', kind: 'diameter', value: f.ovality, uncertainty: UD, unit: 'length', nameKey: 'readout.ovality' });
-        extra.push({ label: 'rms', kind: 'radius', value: f.rms, uncertainty: UD / 2, unit: 'length', nameKey: 'readout.rms' });
+        extra.push({
+          label: 'ov',
+          kind: 'diameter',
+          value: f.ovality,
+          uncertainty: UD,
+          unit: 'length',
+          nameKey: 'readout.ovality',
+        });
+        extra.push({
+          label: 'rms',
+          kind: 'radius',
+          value: f.rms,
+          uncertainty: UD / 2,
+          unit: 'length',
+          nameKey: 'readout.rms',
+        });
       }
     }
     if (s.mode === 'points') notes.push(`n = ${s.pts.length}`);
     return [
-      { label: `Ø${s.n}`, kind: 'diameter', value: D, uncertainty: UD, primary: true, unit: 'length', nameKey: 'kind.diameter', notes },
-      { label: `R${s.n}`, kind: 'radius', value: s.r, uncertainty: roundUpOneSig(UD / 2), unit: 'length', nameKey: 'kind.radius' },
+      {
+        label: `Ø${s.n}`,
+        kind: 'diameter',
+        value: D,
+        uncertainty: UD,
+        primary: true,
+        unit: 'length',
+        nameKey: 'kind.diameter',
+        notes,
+      },
+      {
+        label: `R${s.n}`,
+        kind: 'radius',
+        value: s.r,
+        uncertainty: roundUpOneSig(UD / 2),
+        unit: 'length',
+        nameKey: 'kind.radius',
+      },
       ...extra,
-      { label: 'C', kind: 'perimeter', value: Math.PI * D, uncertainty: roundUpOneSig(Math.PI * UD), unit: 'length', nameKey: 'readout.circumference' },
-      { label: 'AR', kind: 'area', value: (Math.PI * D * D) / 4, uncertainty: roundUpOneSig((Math.PI / 2) * D * UD), unit: 'area', nameKey: 'readout.area' },
+      {
+        label: 'C',
+        kind: 'perimeter',
+        value: Math.PI * D,
+        uncertainty: roundUpOneSig(Math.PI * UD),
+        unit: 'length',
+        nameKey: 'readout.circumference',
+      },
+      {
+        label: 'AR',
+        kind: 'area',
+        value: (Math.PI * D * D) / 4,
+        uncertainty: roundUpOneSig((Math.PI / 2) * D * UD),
+        unit: 'area',
+        nameKey: 'readout.area',
+      },
     ];
   }
 
   toMeasurements(): ToolMeasurement[] {
     const keep = new Set(['outerDiameter', 'innerDiameter', 'crossSection', 'diameter']);
     return this.readouts()
-      .filter((r) => r.primary || (this.s.mode === 'ring' && keep.has(r.kind) && r.nameKey !== 'readout.meanDiameter'))
-      .map((r) => ({ tool: this.tool, kind: r.kind, label: r.label, value: r.value, uncertainty: r.uncertainty, toolState: this.serialize() }));
+      .filter(
+        (r) =>
+          r.primary || (this.s.mode === 'ring' && keep.has(r.kind) && r.nameKey !== 'readout.meanDiameter'),
+      )
+      .map((r) => ({
+        tool: this.tool,
+        kind: r.kind,
+        label: r.label,
+        value: r.value,
+        uncertainty: r.uncertainty,
+        toolState: this.serialize(),
+      }));
   }
 
   serialize(): CircleState {
@@ -430,10 +530,24 @@ export class CircleTool extends BaseTool implements ToolInstance {
     if (rc.inLoupe) return;
     const rs = this.readouts();
     const r = rs[0];
-    drawTag(rc, `${r.label} ${fmtLength(r.value, r.uncertainty, rc.unit, rc.fractionDen)}`, [s.c[0], s.c[1] - Math.min(s.r * 0.45, 9)], [0, -1], rc.theme.ink, rc.theme.bg);
+    drawTag(
+      rc,
+      `${r.label} ${fmtLength(r.value, r.uncertainty, rc.unit, rc.fractionDen)}`,
+      [s.c[0], s.c[1] - Math.min(s.r * 0.45, 9)],
+      [0, -1],
+      rc.theme.ink,
+      rc.theme.bg,
+    );
     if (s.mode === 'ring' && s.ri > 6) {
       const id = rs[1];
-      drawTag(rc, `${id.label} ${fmtLength(id.value, id.uncertainty, rc.unit, rc.fractionDen)}`, [s.ci[0], s.ci[1] + Math.min(s.ri * 0.45, 6)], [0, -1], rc.theme.accent2, '#ffffff');
+      drawTag(
+        rc,
+        `${id.label} ${fmtLength(id.value, id.uncertainty, rc.unit, rc.fractionDen)}`,
+        [s.ci[0], s.ci[1] + Math.min(s.ri * 0.45, 6)],
+        [0, -1],
+        rc.theme.accent2,
+        '#ffffff',
+      );
     }
     for (const [id, q] of this.knobs()) {
       const innerKnob = id.length === 1 && id === id.toLowerCase();

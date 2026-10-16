@@ -816,12 +816,12 @@ Reference set: ID-1 card, 150 mm steel rule, known coins, M6/M8/M10 bolts and nu
 - [x] Quick history + basic record save
 
 ### Phase 2 — Core tools
-- [ ] Vernier caliper with skins, thumb wheel, Learn mode (§6.2)
-- [ ] Protractor 0–180/360, two-line angle (§6.3)
-- [ ] Circle: centre-radius, squeeze-fit, 3-point, multi-point, ring mode (§6.4)
-- [ ] Hex overlay with wrench suggestion (§6.6.1)
-- [ ] Rectangle/square piece, polygon, area (§6.7)
-- [ ] Quick-shape palette (§4.3), tolerance go/no-go (§7.5), repeat & average (§7.7)
+- [x] Vernier caliper with skins, thumb wheel, Learn mode (§6.2)
+- [x] Protractor 0–180/360, two-line angle (§6.3)
+- [x] Circle: centre-radius, squeeze-fit, 3-point, multi-point, ring mode (§6.4)
+- [x] Hex overlay with wrench suggestion (§6.6.1)
+- [x] Rectangle/square piece, polygon, area (§6.7)
+- [x] Quick-shape palette (§4.3), tolerance go/no-go (§7.5), repeat & average (§7.7)
 
 ### Phase 3 — Records, camera, drawing, export
 - [ ] Full records: list, search, folders, tags, recipes, compare, batch (§9)

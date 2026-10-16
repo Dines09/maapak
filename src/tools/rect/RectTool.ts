@@ -1,7 +1,19 @@
 // Rectangle · Square piece (§6.7): 4 edge handles, 4 corner handles, rotation, corner radius, square lock.
 // Readouts L, W, diagonal, area and perimeter (corner radius taken into account).
 import type { Vec } from '../../core/types';
-import { add, dist, fitShift, normAngle, rad2deg, rotateAbout, scale, snapAngle, sub, dot, type RectMm } from '../../core/geometry';
+import {
+  add,
+  dist,
+  fitShift,
+  normAngle,
+  rad2deg,
+  rotateAbout,
+  scale,
+  snapAngle,
+  sub,
+  dot,
+  type RectMm,
+} from '../../core/geometry';
 import { roundUpOneSig } from '../../core/uncertainty';
 import type { Handle, Readout, RenderContext, ToolAction, ToolInstance } from '../../render/types';
 import { drawKnob, drawOutline, drawTag, line } from '../../render/draw';
@@ -29,7 +41,20 @@ const EDGES: Record<string, Vec> = { e: [1, 0], w: [-1, 0], n: [0, 1], s: [0, -1
 const CORNERS: Record<string, Vec> = { ne: [1, 1], nw: [-1, 1], se: [1, -1], sw: [-1, -1] };
 
 export function defaultRectState(n = 1, square = false): RectState {
-  return { v: 1, id: newId('rect'), tool: 'rect', n, placed: false, c: [0, 0], angle: 0, w: 40, h: square ? 40 : 25, r: 0, square, primary: 'L' };
+  return {
+    v: 1,
+    id: newId('rect'),
+    tool: 'rect',
+    n,
+    placed: false,
+    c: [0, 0],
+    angle: 0,
+    w: 40,
+    h: square ? 40 : 25,
+    r: 0,
+    square,
+    primary: 'L',
+  };
 }
 
 export class RectTool extends BaseTool implements ToolInstance {
@@ -96,7 +121,10 @@ export class RectTool extends BaseTool implements ToolInstance {
     const s = this.s;
     for (let i = 0; i < 20; i++) {
       s.c = add(s.c, fitShift(this.outline(), b));
-      const fits = this.outline().every((p) => p[0] >= b.x - 0.01 && p[0] <= b.x + b.w + 0.01 && p[1] >= b.y - 0.01 && p[1] <= b.y + b.h + 0.01);
+      const fits = this.outline().every(
+        (p) =>
+          p[0] >= b.x - 0.01 && p[0] <= b.x + b.w + 0.01 && p[1] >= b.y - 0.01 && p[1] <= b.y + b.h + 0.01,
+      );
       if (fits) return;
       s.w *= 0.92;
       s.h *= 0.92;
@@ -137,12 +165,19 @@ export class RectTool extends BaseTool implements ToolInstance {
     }
     if (best) return best;
     const [t, o] = toLocal(this.s.c, this.s.angle, p);
-    if (Math.abs(t) <= this.s.w / 2 && Math.abs(o) <= this.s.h / 2) return { id: 'body', kind: 'body', posMm: p };
+    if (Math.abs(t) <= this.s.w / 2 && Math.abs(o) <= this.s.h / 2)
+      return { id: 'body', kind: 'body', posMm: p };
     return null;
   }
 
   onDragStart(h: Handle, p: Vec): void {
-    this.drag = { id: h.id, p0: p, s0: structuredClone(this.s), a0: rad2deg(Math.atan2(p[1] - this.s.c[1], p[0] - this.s.c[0])), snapped: null };
+    this.drag = {
+      id: h.id,
+      p0: p,
+      s0: structuredClone(this.s),
+      a0: rad2deg(Math.atan2(p[1] - this.s.c[1], p[0] - this.s.c[0])),
+      snapped: null,
+    };
   }
 
   onDragMove(h: Handle, p: Vec, _precision = false): void {
@@ -243,22 +278,80 @@ export class RectTool extends BaseTool implements ToolInstance {
     const area = s.w * s.h - (4 - Math.PI) * s.r * s.r;
     const per = 2 * (s.w + s.h) - 8 * s.r + 2 * Math.PI * s.r;
     const out: Readout[] = [
-      { label: `L${s.n}`, kind: 'length', value: s.w, uncertainty: UL, primary: s.primary === 'L' || s.square, unit: 'length', nameKey: s.square ? 'readout.side' : 'readout.length' },
+      {
+        label: `L${s.n}`,
+        kind: 'length',
+        value: s.w,
+        uncertainty: UL,
+        primary: s.primary === 'L' || s.square,
+        unit: 'length',
+        nameKey: s.square ? 'readout.side' : 'readout.length',
+      },
     ];
-    if (!s.square) out.push({ label: `W${s.n}`, kind: 'width', value: s.h, uncertainty: UW, primary: s.primary === 'W', unit: 'length', nameKey: 'kind.width' });
+    if (!s.square)
+      out.push({
+        label: `W${s.n}`,
+        kind: 'width',
+        value: s.h,
+        uncertainty: UW,
+        primary: s.primary === 'W',
+        unit: 'length',
+        nameKey: 'kind.width',
+      });
     out.push(
-      { label: 'D', kind: 'length', value: diag, uncertainty: roundUpOneSig(Math.hypot((s.w * UL) / diag, (s.h * UW) / diag)), unit: 'length', nameKey: 'readout.diagonal' },
-      { label: 'AR', kind: 'area', value: area, uncertainty: roundUpOneSig(Math.hypot(s.h * UL, s.w * UW)), unit: 'area', nameKey: 'readout.area' },
-      { label: 'PE', kind: 'perimeter', value: per, uncertainty: roundUpOneSig(2 * Math.hypot(UL, UW)), unit: 'length', nameKey: 'kind.perimeter' },
+      {
+        label: 'D',
+        kind: 'length',
+        value: diag,
+        uncertainty: roundUpOneSig(Math.hypot((s.w * UL) / diag, (s.h * UW) / diag)),
+        unit: 'length',
+        nameKey: 'readout.diagonal',
+      },
+      {
+        label: 'AR',
+        kind: 'area',
+        value: area,
+        uncertainty: roundUpOneSig(Math.hypot(s.h * UL, s.w * UW)),
+        unit: 'area',
+        nameKey: 'readout.area',
+      },
+      {
+        label: 'PE',
+        kind: 'perimeter',
+        value: per,
+        uncertainty: roundUpOneSig(2 * Math.hypot(UL, UW)),
+        unit: 'length',
+        nameKey: 'kind.perimeter',
+      },
     );
-    if (s.r > 0.05) out.push({ label: 'R', kind: 'radius', value: s.r, uncertainty: UL, unit: 'length', nameKey: 'kind.radius' });
+    if (s.r > 0.05)
+      out.push({
+        label: 'R',
+        kind: 'radius',
+        value: s.r,
+        uncertainty: UL,
+        unit: 'length',
+        nameKey: 'kind.radius',
+      });
     return out;
   }
 
   toMeasurements(): ToolMeasurement[] {
     return this.readouts()
-      .filter((r) => (r.kind === 'length' && r.nameKey !== 'readout.diagonal') || r.kind === 'width' || r.kind === 'radius')
-      .map((r) => ({ tool: this.tool, kind: r.kind, label: r.label, value: r.value, uncertainty: r.uncertainty, toolState: this.serialize() }));
+      .filter(
+        (r) =>
+          (r.kind === 'length' && r.nameKey !== 'readout.diagonal') ||
+          r.kind === 'width' ||
+          r.kind === 'radius',
+      )
+      .map((r) => ({
+        tool: this.tool,
+        kind: r.kind,
+        label: r.label,
+        value: r.value,
+        uncertainty: r.uncertainty,
+        toolState: this.serialize(),
+      }));
   }
 
   serialize(): RectState {
@@ -302,9 +395,23 @@ export class RectTool extends BaseTool implements ToolInstance {
     if (rc.inLoupe) return;
     const rs = this.readouts();
     const n = frameN(s.angle);
-    drawTag(rc, `${rs[0].label} ${fmtLength(rs[0].value, rs[0].uncertainty, rc.unit, rc.fractionDen)}`, this.L(0, s.h / 2 - 3.5), n, rc.theme.ink, rc.theme.bg);
+    drawTag(
+      rc,
+      `${rs[0].label} ${fmtLength(rs[0].value, rs[0].uncertainty, rc.unit, rc.fractionDen)}`,
+      this.L(0, s.h / 2 - 3.5),
+      n,
+      rc.theme.ink,
+      rc.theme.bg,
+    );
     if (!s.square) {
-      drawTag(rc, `${rs[1].label} ${fmtLength(rs[1].value, rs[1].uncertainty, rc.unit, rc.fractionDen)}`, this.L(s.w / 2 - 9, 0), n, rc.theme.accent2, '#ffffff');
+      drawTag(
+        rc,
+        `${rs[1].label} ${fmtLength(rs[1].value, rs[1].uncertainty, rc.unit, rc.fractionDen)}`,
+        this.L(s.w / 2 - 9, 0),
+        n,
+        rc.theme.accent2,
+        '#ffffff',
+      );
     }
     for (const id of ['e', 'w', 'n', 's']) {
       const f = this.focusOf(id)!;
@@ -318,7 +425,8 @@ export class RectTool extends BaseTool implements ToolInstance {
       ctx.restore();
       drawKnob(rc, q, rc.theme.accent, { active: rc.activeHandleId === id });
     }
-    for (const id of ['ne', 'nw', 'se', 'sw']) drawKnob(rc, this.knobPos(id), rc.theme.accent2, { active: rc.activeHandleId === id });
+    for (const id of ['ne', 'nw', 'se', 'sw'])
+      drawKnob(rc, this.knobPos(id), rc.theme.accent2, { active: rc.activeHandleId === id });
     drawKnob(rc, this.knobPos('rot'), '#334155', { glyph: 'rotate', active: rc.activeHandleId === 'rot' });
     if (rc.selected) drawKnob(rc, this.knobPos('rad'), '#64748b', { active: rc.activeHandleId === 'rad' });
   }

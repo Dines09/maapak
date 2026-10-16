@@ -96,8 +96,14 @@ export function decimalsForValue(U: number): number {
 
 /** Standard uncertainty of one aligned point (one edge, no calibration term), mm. */
 export function pointUncertainty(pxPerMm: number, protector: ScreenProtector, withLoupe = true): number {
-  return lengthUncertainty({ lengthMm: 0, pxPerMm, relCal: 0, screenProtector: protector, withLoupe, edges: 1 })
-    .u;
+  return lengthUncertainty({
+    lengthMm: 0,
+    pxPerMm,
+    relCal: 0,
+    screenProtector: protector,
+    withLoupe,
+    edges: 1,
+  }).u;
 }
 
 /**

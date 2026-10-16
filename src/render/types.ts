@@ -35,6 +35,8 @@ export interface RenderContext {
   activeHandleId: string | null;
   /** Hidden handles while Focus mode is on are still drawn; chrome is not. */
   largeHandles: boolean;
+  /** On-canvas value labels (off by default: the readout pill shows the value). */
+  tags: boolean;
 }
 
 export type HandleKind = 'point' | 'edge' | 'rotate' | 'body';

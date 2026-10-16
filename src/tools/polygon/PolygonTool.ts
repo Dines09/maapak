@@ -92,10 +92,12 @@ export class PolygonTool extends BaseTool implements ToolInstance {
       }
     });
     if (best) return best;
-    if (s.closed && s.pts.length >= 3 && pointInPolygon(p, s.pts)) return { id: 'body', kind: 'body', posMm: p };
+    if (s.closed && s.pts.length >= 3 && pointInPolygon(p, s.pts))
+      return { id: 'body', kind: 'body', posMm: p };
     const n = s.closed ? s.pts.length : s.pts.length - 1;
     for (let i = 0; i < n; i++) {
-      if (distToSegment(p, s.pts[i], s.pts[(i + 1) % s.pts.length]) <= tol * 0.4) return { id: 'body', kind: 'body', posMm: p };
+      if (distToSegment(p, s.pts[i], s.pts[(i + 1) % s.pts.length]) <= tol * 0.4)
+        return { id: 'body', kind: 'body', posMm: p };
     }
     return null;
   }
@@ -148,7 +150,12 @@ export class PolygonTool extends BaseTool implements ToolInstance {
           if (s.pts.length > (s.closed ? 3 : 2)) s.pts.pop();
         },
       },
-      { id: 'closed', labelKey: 'polygon.closed', active: s.closed, run: () => (s.closed = !s.closed && s.pts.length >= 3) },
+      {
+        id: 'closed',
+        labelKey: 'polygon.closed',
+        active: s.closed,
+        run: () => (s.closed = !s.closed && s.pts.length >= 3),
+      },
     ];
   }
 
@@ -170,21 +177,57 @@ export class PolygonTool extends BaseTool implements ToolInstance {
         sum += ((prev + segs[i]) / 2) ** 2;
       }
       const UA = roundUpOneSig(2 * Math.sqrt(sum * u * u + (2 * A * rc) ** 2));
-      out.push({ label: `AR${s.n}`, kind: 'area', value: A, uncertainty: UA, primary: true, unit: 'area', nameKey: 'readout.area' });
-      out.push({ label: `PE${s.n}`, kind: 'perimeter', value: total, uncertainty: UP, unit: 'length', nameKey: 'kind.perimeter' });
+      out.push({
+        label: `AR${s.n}`,
+        kind: 'area',
+        value: A,
+        uncertainty: UA,
+        primary: true,
+        unit: 'area',
+        nameKey: 'readout.area',
+      });
+      out.push({
+        label: `PE${s.n}`,
+        kind: 'perimeter',
+        value: total,
+        uncertainty: UP,
+        unit: 'length',
+        nameKey: 'kind.perimeter',
+      });
     } else {
-      out.push({ label: `L${s.n}`, kind: 'length', value: total, uncertainty: UP, primary: true, unit: 'length', nameKey: 'readout.total' });
+      out.push({
+        label: `L${s.n}`,
+        kind: 'length',
+        value: total,
+        uncertainty: UP,
+        primary: true,
+        unit: 'length',
+        nameKey: 'readout.total',
+      });
     }
     segs.slice(0, 8).forEach((l, i) => {
       const a = s.pts[i];
       const b = s.pts[(i + 1) % s.pts.length];
-      out.push({ label: `S${i + 1}`, kind: 'length', value: l, uncertainty: this.env.uncertainty(l, sub(b, a), 2), unit: 'length', nameKey: undefined });
+      out.push({
+        label: `S${i + 1}`,
+        kind: 'length',
+        value: l,
+        uncertainty: this.env.uncertainty(l, sub(b, a), 2),
+        unit: 'length',
+        nameKey: undefined,
+      });
     });
     if (s.closed && s.pts.length >= 3) {
       const angs = interiorAngles(s.pts);
       angs.slice(0, 8).forEach((a, i) => {
         const prev = segs[(i - 1 + segs.length) % segs.length];
-        out.push({ label: `∠${i + 1}`, kind: 'angle', value: a, uncertainty: angleUncertaintyDeg(u, [prev, segs[i]]), unit: 'angle' });
+        out.push({
+          label: `∠${i + 1}`,
+          kind: 'angle',
+          value: a,
+          uncertainty: angleUncertaintyDeg(u, [prev, segs[i]]),
+          unit: 'angle',
+        });
       });
     }
     return out;
@@ -194,7 +237,14 @@ export class PolygonTool extends BaseTool implements ToolInstance {
     const rs = this.readouts();
     return rs
       .filter((r) => r.primary || r.kind === 'perimeter')
-      .map((r) => ({ tool: this.tool, kind: r.kind, label: r.label, value: r.value, uncertainty: r.uncertainty, toolState: this.serialize() }));
+      .map((r) => ({
+        tool: this.tool,
+        kind: r.kind,
+        label: r.label,
+        value: r.value,
+        uncertainty: r.uncertainty,
+        toolState: this.serialize(),
+      }));
   }
 
   serialize(): PolygonState {
@@ -216,7 +266,11 @@ export class PolygonTool extends BaseTool implements ToolInstance {
         ? `${fmtArea(r.value, r.uncertainty, rc.unit)} ${unitLabel(rc.unit)}²`
         : fmtLength(r.value, r.uncertainty, rc.unit, rc.fractionDen);
     drawTag(rc, `${r.label} ${val}`, c, [0, -1], rc.theme.ink, rc.theme.bg);
-    s.pts.forEach((p, i) => drawKnob(rc, p, i === 0 ? rc.theme.accent2 : rc.theme.accent, { active: rc.activeHandleId === `v${i}` }));
+    s.pts.forEach((p, i) =>
+      drawKnob(rc, p, i === 0 ? rc.theme.accent2 : rc.theme.accent, {
+        active: rc.activeHandleId === `v${i}`,
+      }),
+    );
   }
 }
 

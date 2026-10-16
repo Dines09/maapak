@@ -30,7 +30,7 @@ import {
 } from '../../render/draw';
 import { fmtLength } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
-import { KNOB_OFFSET } from '../ruler/RulerTool';
+import { KNOB_OFFSET, STRIP, TICK_SCALE } from '../ruler/RulerTool';
 
 export interface GapState {
   v: 1;
@@ -63,7 +63,7 @@ export function defaultGapState(n = 1): GapState {
     angle: 0,
     oA: 15,
     oB: -15,
-    width: 13,
+    width: STRIP,
     a: -20,
     b: 20,
     zero: -30,
@@ -88,7 +88,7 @@ export class GapRulerTool extends BaseTool implements ToolInstance {
 
   constructor(state: GapState) {
     super();
-    this.s = structuredClone(state);
+    this.s = structuredClone({ ...state, width: STRIP });
     this.id = state.id;
   }
 
@@ -137,6 +137,24 @@ export class GapRulerTool extends BaseTool implements ToolInstance {
       s.b = b.w / 4;
       s.placed = true;
     }
+  }
+
+  /** Put the two measuring edges where two fingers were held (horizontal or vertical pair). */
+  placeAt(p1: Vec, p2: Vec, b: RectMm): void {
+    const s = this.s;
+    const vertical = Math.abs(p1[0] - p2[0]) > Math.abs(p1[1] - p2[1]);
+    s.angle = vertical ? 90 : 0;
+    const mid: Vec = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
+    s.c = vertical ? [mid[0], b.y + b.h / 2] : [b.x + b.w / 2, mid[1]];
+    // n points up for angle 0 and right for angle 90.
+    const off = (p: Vec) => (vertical ? p[0] - s.c[0] : s.c[1] - p[1]);
+    s.oA = Math.max(off(p1), off(p2));
+    s.oB = Math.min(off(p1), off(p2));
+    const tr = this.range(0, b) ?? [-20, 20];
+    s.zero = tr[0] + 2;
+    s.a = tr[0] + (tr[1] - tr[0]) * 0.25;
+    s.b = tr[0] + (tr[1] - tr[0]) * 0.75;
+    s.placed = true;
   }
 
   /** Visible t-range of a line at offset `off`. */
@@ -461,6 +479,8 @@ export class GapRulerTool extends BaseTool implements ToolInstance {
         ink,
         textUp: n,
         inchDen: rc.fractionDen,
+        tickScale: TICK_SCALE,
+        labelSize: 2,
       });
       ctx.restore();
     }

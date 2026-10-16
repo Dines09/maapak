@@ -33,8 +33,20 @@ export function ToleranceSheet({
     const nom = existing ? existing.nominal : target.readout.value;
     const dec = isAngle ? 1 : u === 'mm' ? 2 : u === 'cm' ? 3 : 4;
     setNominal(toDisp(nom).toFixed(dec));
-    setPlus(existing ? toDisp(existing.upper - existing.nominal).toFixed(dec) : isAngle ? '0.5' : toDisp(0.2).toFixed(dec));
-    setMinus(existing ? toDisp(existing.nominal - existing.lower).toFixed(dec) : isAngle ? '0.5' : toDisp(0.2).toFixed(dec));
+    setPlus(
+      existing
+        ? toDisp(existing.upper - existing.nominal).toFixed(dec)
+        : isAngle
+          ? '0.5'
+          : toDisp(0.2).toFixed(dec),
+    );
+    setMinus(
+      existing
+        ? toDisp(existing.nominal - existing.lower).toFixed(dec)
+        : isAngle
+          ? '0.5'
+          : toDisp(0.2).toFixed(dec),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target]);
 
@@ -50,17 +62,40 @@ export function ToleranceSheet({
   };
 
   return (
-    <Sheet open={!!target} onClose={onClose} title={t('tol.title', { label: target?.readout.label ?? '' })} testId="tol-sheet">
+    <Sheet
+      open={!!target}
+      onClose={onClose}
+      title={t('tol.title', { label: target?.readout.label ?? '' })}
+      testId="tol-sheet"
+    >
       <p className="mb-2 text-xs text-slate-400">{t('tol.hint')}</p>
       <Field label={`${t('tol.nominal')} (${sym})`}>
-        <input className={inputCls} inputMode="decimal" value={nominal} onChange={(e) => setNominal(e.target.value)} data-testid="tol-nominal" />
+        <input
+          className={inputCls}
+          inputMode="decimal"
+          value={nominal}
+          onChange={(e) => setNominal(e.target.value)}
+          data-testid="tol-nominal"
+        />
       </Field>
       <div className="grid grid-cols-2 gap-2">
         <Field label={`+ ${t('tol.upper')} (${sym})`}>
-          <input className={inputCls} inputMode="decimal" value={plus} onChange={(e) => setPlus(e.target.value)} data-testid="tol-plus" />
+          <input
+            className={inputCls}
+            inputMode="decimal"
+            value={plus}
+            onChange={(e) => setPlus(e.target.value)}
+            data-testid="tol-plus"
+          />
         </Field>
         <Field label={`− ${t('tol.lower')} (${sym})`}>
-          <input className={inputCls} inputMode="decimal" value={minus} onChange={(e) => setMinus(e.target.value)} data-testid="tol-minus" />
+          <input
+            className={inputCls}
+            inputMode="decimal"
+            value={minus}
+            onChange={(e) => setMinus(e.target.value)}
+            data-testid="tol-minus"
+          />
         </Field>
       </div>
       <div className="mt-3 flex gap-2">

@@ -114,6 +114,12 @@ export function SettingsScreen() {
             onChange={(v) => s.set({ leftHanded: v })}
           />
           <Toggle label={t('settings.loupe')} checked={s.loupe} onChange={(v) => s.set({ loupe: v })} />
+          <Toggle
+            label={t('settings.canvasLabels')}
+            hint={t('settings.canvasLabelsHint')}
+            checked={s.canvasLabels}
+            onChange={(v) => s.set({ canvasLabels: v })}
+          />
           <Row label={t('settings.loupeZoom')}>
             <Segmented
               size="sm"

@@ -1,5 +1,5 @@
-// Ruler (§6.1): A Classic, C Split dual-unit, D Leapfrog chain. Mode E (Free / T-square) is several
-// classic rulers with parallel/perpendicular snapping.
+// Ruler (§6.1): a thin scale with two markers. Both ends can be dragged anywhere (length and direction),
+// the markers are solid full-height lines, and the leapfrog chain covers parts longer than the screen.
 import type { Vec } from '../../core/types';
 import {
   add,
@@ -19,21 +19,13 @@ import {
   type RectMm,
 } from '../../core/geometry';
 import { combineRss } from '../../core/uncertainty';
+import i18n from '../../i18n';
 import type { Handle, Readout, RenderContext, ToolAction, ToolInstance } from '../../render/types';
 import { SKINS, skinInk } from '../../render/skins';
-import {
-  drawKnob,
-  drawMarkerLine,
-  drawScale,
-  drawTag,
-  drawText,
-  polygonPx,
-  type ScaleKind,
-} from '../../render/draw';
-import { fmtLength } from '../../render/format';
+import { drawKnob, drawMarkerLine, drawScale, drawText, polygonPx, type ScaleKind } from '../../render/draw';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
 
-export type RulerKind = 'ruler' | 'splitRuler' | 'leapfrog';
+export type RulerKind = 'ruler' | 'leapfrog';
 
 export interface RulerState {
   v: 1;
@@ -52,13 +44,15 @@ export interface RulerState {
   b: number;
   segments: number[];
   segU: number[];
-  bottom: 'inch' | 'metricReversed';
 }
 
-/** mm beyond the body where marker knobs sit (handles are offset from the finger, §2.4). */
-export const KNOB_OFFSET = 6.5;
-const CAP = 8;
-const MIN_LEN = 20;
+/** Thin scale band (mm). */
+export const STRIP = 7;
+/** Marker knobs sit just beyond the band, away from the edge being aligned. */
+export const KNOB_OFFSET = 4.5;
+export const TICK_SCALE = 0.68;
+const MIN_LEN = 15;
+const END = 3; // end-handle inset from the scale ends
 
 export function defaultRulerState(tool: RulerKind, n = 1, slot = 0): RulerState {
   return {
@@ -71,14 +65,13 @@ export function defaultRulerState(tool: RulerKind, n = 1, slot = 0): RulerState 
     origin: [0, 0],
     angle: 0,
     length: 60,
-    width: tool === 'splitRuler' ? 26 : 16,
+    width: STRIP,
     zero: 0,
     flip: false,
     a: 10,
     b: 40,
     segments: [],
     segU: [],
-    bottom: 'inch',
   };
 }
 
@@ -87,7 +80,6 @@ interface DragCtx {
   p0: Vec;
   s0: RulerState;
   c0: Vec;
-  ang0: number;
   snapped: number | null;
 }
 
@@ -100,7 +92,7 @@ export class RulerTool extends BaseTool implements ToolInstance {
 
   constructor(state: RulerState) {
     super();
-    this.s = structuredClone(state);
+    this.s = structuredClone({ ...state, width: STRIP });
     this.id = state.id;
     this.tool = state.tool;
   }
@@ -115,37 +107,33 @@ export class RulerTool extends BaseTool implements ToolInstance {
 
   // ---------- geometry ----------
 
-  u(): Vec {
-    return dirOf(this.s.angle);
+  u(st = this.s): Vec {
+    return dirOf(st.angle);
   }
-  /** Normal pointing from the measuring edge into the body. */
-  nrm(): Vec {
-    const u = this.u();
+  /** Normal from the measuring edge into the band. */
+  nrm(st = this.s): Vec {
+    const u = this.u(st);
     return [u[1], -u[0]];
   }
   P(t: number, st = this.s): Vec {
     return add(st.origin, scale(dirOf(st.angle), t));
   }
-  Q(t: number, off: number): Vec {
-    return add(this.P(t), scale(this.nrm(), off));
-  }
-  private split(): boolean {
-    return this.s.tool === 'splitRuler';
-  }
-  private knobOff(): number {
-    return this.split() ? this.s.width / 2 : this.s.width + KNOB_OFFSET;
-  }
-  private rowOff(): number {
-    return this.split() ? this.s.width : this.s.width + KNOB_OFFSET + 2.5;
+  Q(t: number, off: number, st = this.s): Vec {
+    return add(this.P(t, st), scale(this.nrm(st), off));
   }
   center(): Vec {
-    return this.Q(this.s.length / 2, this.s.width / 2);
+    return this.Q(this.s.length / 2, STRIP / 2);
+  }
+  /** Knob row on the band side if there is room, else on the edge side. */
+  knobOff(): number {
+    const b = this.env.bounds();
+    const up = STRIP + KNOB_OFFSET;
+    return inRect(this.Q(this.s.length / 2, up + 2), b) ? up : -KNOB_OFFSET;
   }
 
   outline(): Vec[] {
     const L = this.s.length;
-    const r = this.rowOff();
-    return [this.Q(0, 0), this.Q(L, 0), this.Q(L, r), this.Q(0, r)];
+    return [this.Q(0, 0), this.Q(L, 0), this.Q(L, STRIP), this.Q(0, STRIP)];
   }
 
   angle(): number {
@@ -154,21 +142,14 @@ export class RulerTool extends BaseTool implements ToolInstance {
 
   snapTargets(): Vec[] {
     const L = this.s.length;
-    return [
-      this.P(0),
-      this.P(L),
-      this.P(this.s.a),
-      this.P(this.s.b),
-      this.Q(0, this.s.width),
-      this.Q(L, this.s.width),
-    ];
+    return [this.P(0), this.P(L), this.P(this.s.a), this.P(this.s.b)];
   }
 
   focusOf(handleId: string): Vec | null {
     if (handleId === 'a') return this.P(this.s.a);
     if (handleId === 'b') return this.P(this.s.b);
     if (handleId === 'end') return this.P(this.s.length);
-    if (handleId === 'rot') return this.P(0);
+    if (handleId === 'start') return this.P(0);
     return null;
   }
 
@@ -183,8 +164,8 @@ export class RulerTool extends BaseTool implements ToolInstance {
     const s = this.s;
     s.angle = 0;
     s.length = Math.max(MIN_LEN, b.w - 4);
-    const top = b.y + this.rowOff() + 4 + s.slot * 34;
-    s.origin = [b.x + 2, Math.min(b.y + b.h - 10, top)];
+    const y = b.y + STRIP + KNOB_OFFSET + 6 + Math.min(b.h * 0.25, 30) + s.slot * 26;
+    s.origin = [b.x + 2, Math.min(b.y + b.h - 6, y)];
     if (s.tool === 'leapfrog') {
       s.zero = 4;
       s.a = 4;
@@ -197,20 +178,11 @@ export class RulerTool extends BaseTool implements ToolInstance {
     s.placed = true;
   }
 
-  private maxLen(b: RectMm): number {
-    const u = this.u();
-    const starts = [this.Q(0, 0), this.Q(0, this.rowOff())];
-    if (!starts.every((p) => inRect(p, b))) return Infinity;
-    return Math.min(...starts.map((p) => rayExitT(p, u, b)));
-  }
-
   fit(b: RectMm): void {
-    const shift = fitShift(this.outline(), b);
-    this.s.origin = add(this.s.origin, shift);
-    if (!this.outline().every((p) => inRect(p, b, 0.01))) {
-      const m = this.maxLen(b);
-      if (Number.isFinite(m)) this.setLength(Math.max(MIN_LEN, Math.min(this.s.length, m)));
+    for (let i = 0; i < 20; i++) {
       this.s.origin = add(this.s.origin, fitShift(this.outline(), b));
+      if (this.outline().every((p) => inRect(p, b, 0.01)) || this.s.length <= MIN_LEN) return;
+      this.setLength(Math.max(MIN_LEN, this.s.length * 0.92));
     }
   }
 
@@ -232,45 +204,32 @@ export class RulerTool extends BaseTool implements ToolInstance {
   hitTest(p: Vec, tol: number): Handle | null {
     const s = this.s;
     const ko = this.knobOff();
+    const cands: [string, Vec, Handle['kind']][] = [
+      ['a', this.Q(s.a, ko), 'edge'],
+      ['b', this.Q(s.b, ko), 'edge'],
+      ['start', this.Q(END, STRIP / 2), 'point'],
+      ['end', this.Q(s.length - END, STRIP / 2), 'point'],
+    ];
     let best: Handle | null = null;
-    let bestD = Infinity;
-    const consider = (h: Handle, d: number) => {
-      if (d <= tol && d < bestD) {
-        best = h;
-        bestD = d;
+    let bd = Infinity;
+    for (const [id, q, kind] of cands) {
+      const d = dist(p, q);
+      if (d <= tol && d < bd) {
+        bd = d;
+        best = { id, kind, posMm: q };
       }
-    };
-    consider(
-      { id: 'a', kind: 'edge', posMm: this.Q(s.a, ko), focusMm: this.P(s.a) },
-      dist(p, this.Q(s.a, ko)),
-    );
-    consider(
-      { id: 'b', kind: 'edge', posMm: this.Q(s.b, ko), focusMm: this.P(s.b) },
-      dist(p, this.Q(s.b, ko)),
-    );
+    }
     if (best) return best;
     const t = projectT(p, s.origin, this.u());
     const off = dot(sub(p, s.origin), this.nrm());
-    const inBody = t >= 0 && t <= s.length && off >= 0 && off <= s.width;
-    if (inBody && t <= CAP) return { id: 'rot', kind: 'rotate', posMm: this.Q(CAP / 2, s.width / 2) };
-    if (inBody && t >= s.length - CAP) {
-      return { id: 'end', kind: 'point', posMm: this.Q(s.length - CAP / 2, s.width / 2) };
-    }
-    if (inBody) return { id: 'body', kind: 'body', posMm: p };
+    if (t >= 0 && t <= s.length && off >= -1 && off <= STRIP + 1)
+      return { id: 'body', kind: 'body', posMm: p };
     return null;
   }
 
   onDragStart(h: Handle, p: Vec): void {
     if (h.id === 'a' || h.id === 'b') this.lastMarker = h.id;
-    const c0 = this.center();
-    this.drag = {
-      id: h.id,
-      p0: p,
-      s0: structuredClone(this.s),
-      c0,
-      ang0: rad2deg(Math.atan2(p[1] - c0[1], p[0] - c0[0])),
-      snapped: null,
-    };
+    this.drag = { id: h.id, p0: p, s0: structuredClone(this.s), c0: this.center(), snapped: null };
   }
 
   onDragMove(h: Handle, p: Vec, _precision = false): void {
@@ -279,36 +238,43 @@ export class RulerTool extends BaseTool implements ToolInstance {
     const s = this.s;
     const s0 = d.s0;
     const delta = sub(p, d.p0);
-    const u = dirOf(s0.angle);
     switch (h.id) {
       case 'a':
       case 'b': {
-        const t = this.snapT(clamp(s0[h.id] + dot(delta, u), 0, s.length));
+        const t = this.snapT(clamp(s0[h.id] + dot(delta, this.u(s0)), 0, s.length));
         s[h.id] = t;
         if (s.tool === 'leapfrog' && h.id === 'a') s.zero = t;
         break;
       }
-      case 'end': {
-        const b = this.env.bounds();
-        this.setLength(clamp(s0.length + dot(delta, u), MIN_LEN, this.maxLen(b)));
+      case 'start':
+      case 'end':
+        this.moveEnd(h.id, delta);
         break;
-      }
-      case 'rot': {
-        const a = rad2deg(Math.atan2(p[1] - d.c0[1], p[0] - d.c0[0]));
-        let target = normAngle(s0.angle + normAngle(a - d.ang0));
-        target = this.snapAngleTo(target);
-        const L = s0.length;
-        const W = s0.width;
-        const nu = dirOf(target);
-        const nn: Vec = [nu[1], -nu[0]];
-        s.angle = target;
-        s.origin = sub(sub(d.c0, scale(nu, L / 2)), scale(nn, W / 2));
-        break;
-      }
       default: {
         s.origin = add(s0.origin, delta);
         this.snapBody();
       }
+    }
+  }
+
+  /** Drag either end anywhere: length and direction change; markers stay over the same point of the part. */
+  private moveEnd(which: 'start' | 'end', delta: Vec): void {
+    const s = this.s;
+    const s0 = this.drag!.s0;
+    const b = this.env.bounds();
+    const A0 = this.P(0, s0);
+    const B0 = this.P(s0.length, s0);
+    const fixed = which === 'start' ? B0 : A0;
+    let moving = add(which === 'start' ? A0 : B0, delta);
+    moving = [clamp(moving[0], b.x, b.x + b.w), clamp(moving[1], b.y, b.y + b.h)];
+    const v = which === 'start' ? sub(fixed, moving) : sub(moving, fixed);
+    const L = Math.max(MIN_LEN, Math.hypot(v[0], v[1]));
+    const ang = normAngle(this.snapAngleTo(rad2deg(Math.atan2(v[1], v[0]))));
+    s.angle = ang;
+    s.length = L;
+    s.origin = which === 'start' ? sub(fixed, scale(dirOf(ang), L)) : fixed;
+    for (const k of ['a', 'b', 'zero'] as const) {
+      s[k] = clamp(projectT(this.P(s0[k], s0), s.origin, this.u()), 0, L);
     }
   }
 
@@ -325,7 +291,6 @@ export class RulerTool extends BaseTool implements ToolInstance {
   private snapT(t: number): number {
     const s = this.s;
     const d = this.drag;
-    let out = t;
     let target: number | null = null;
     const step = this.env.tickSnapMm();
     if (step > 0) {
@@ -346,12 +311,9 @@ export class RulerTool extends BaseTool implements ToolInstance {
         }
       }
     }
-    if (target !== null) {
-      out = target;
-      if (d && d.snapped !== target) this.snapHaptic();
-    }
+    if (target !== null && d && d.snapped !== target) this.snapHaptic();
     if (d) d.snapped = target;
-    return out;
+    return target ?? t;
   }
 
   private snapAngleTo(angle: number): number {
@@ -366,34 +328,24 @@ export class RulerTool extends BaseTool implements ToolInstance {
     }
     if (target === null) {
       const [a, ok] = snapAngle(angle, 15, 2);
-      if (ok) target = normAngle(a);
+      if (ok) target = a;
     }
     if (target !== null && d && d.snapped !== target) this.snapHaptic();
     if (d) d.snapped = target;
     return target ?? angle;
   }
 
-  /** T-square: snap the ruler's ends onto other rulers' edge points (§6.1 E). */
   private snapBody(): void {
     const pts = this.env.snapPoints(this.id);
     if (!pts.length) return;
-    const mine = [
-      this.P(0),
-      this.P(this.s.length),
-      this.Q(0, this.s.width),
-      this.Q(this.s.length, this.s.width),
-    ];
-    for (const m of mine) {
+    for (const m of [this.P(0), this.P(this.s.length)]) {
       for (const q of pts) {
         if (dist(m, q) <= 1.2) {
           this.s.origin = add(this.s.origin, sub(q, m));
-          if (this.drag && this.drag.snapped !== -1) this.snapHaptic();
-          if (this.drag) this.drag.snapped = -1;
           return;
         }
       }
     }
-    if (this.drag && this.drag.snapped === -1) this.drag.snapped = null;
   }
 
   // ---------- handle menu ----------
@@ -408,15 +360,13 @@ export class RulerTool extends BaseTool implements ToolInstance {
     const s = this.s;
     if (!(valueMm >= 0)) return false;
     if (handleId === 'b' || handleId === 'end') {
-      const dir = s.b >= s.a ? 1 : -1;
-      const nb = s.a + dir * valueMm;
+      const nb = s.a + (s.b >= s.a ? 1 : -1) * valueMm;
       if (nb < 0 || nb > s.length) return false;
       s.b = nb;
       return true;
     }
     if (handleId === 'a') {
-      const dir = s.a >= s.b ? 1 : -1;
-      const na = s.b + dir * valueMm;
+      const na = s.b + (s.a >= s.b ? 1 : -1) * valueMm;
       if (na < 0 || na > s.length) return false;
       s.a = na;
       if (s.tool === 'leapfrog') s.zero = na;
@@ -444,34 +394,6 @@ export class RulerTool extends BaseTool implements ToolInstance {
       });
       list.push({ id: 'zeroA', labelKey: 'action.zeroAtA', run: () => this.setZeroAt('a') });
     }
-    if (s.tool === 'splitRuler') {
-      list.push({
-        id: 'variant',
-        labelKey: s.bottom === 'inch' ? 'action.bottomMetric' : 'action.bottomInch',
-        run: () => {
-          s.bottom = s.bottom === 'inch' ? 'metricReversed' : 'inch';
-        },
-      });
-    }
-    if (s.tool === 'leapfrog') {
-      list.push({ id: 'mark', labelKey: 'action.mark', run: () => this.mark() });
-      list.push({
-        id: 'undoMark',
-        labelKey: 'action.undoMark',
-        run: () => {
-          s.segments.pop();
-          s.segU.pop();
-        },
-      });
-      list.push({
-        id: 'resetChain',
-        labelKey: 'action.resetChain',
-        run: () => {
-          s.segments = [];
-          s.segU = [];
-        },
-      });
-    }
     return list;
   }
 
@@ -481,6 +403,16 @@ export class RulerTool extends BaseTool implements ToolInstance {
     if (L <= 0) return;
     this.s.segments.push(L);
     this.s.segU.push(this.env.uncertainty(L, this.u(), 2));
+  }
+
+  undoMark(): void {
+    this.s.segments.pop();
+    this.s.segU.pop();
+  }
+
+  resetChain(): void {
+    this.s.segments = [];
+    this.s.segU = [];
   }
 
   // ---------- readouts ----------
@@ -555,109 +487,49 @@ export class RulerTool extends BaseTool implements ToolInstance {
     const { ctx } = rc;
     const s = this.s;
     const skin = SKINS[rc.theme.skin];
-    const W = s.width;
     const L = s.length;
     const u = this.u();
     const n = this.nrm();
-    const body = [this.Q(0, 0), this.Q(L, 0), this.Q(L, W), this.Q(0, W)].map((p) => rc.mmToPx(p));
+    const band = [this.Q(0, 0), this.Q(L, 0), this.Q(L, STRIP), this.Q(0, STRIP)].map((p) => rc.mmToPx(p));
 
-    // Body
+    // Thin translucent band so ticks stay readable on any background.
     ctx.save();
-    polygonPx(ctx, body);
-    if (skin.body2) {
-      const g = ctx.createLinearGradient(body[0][0], body[0][1], body[3][0], body[3][1]);
-      g.addColorStop(0, skin.body);
-      g.addColorStop(0.5, skin.body2);
-      g.addColorStop(1, skin.body);
-      ctx.fillStyle = g;
-    } else {
-      ctx.fillStyle = skin.body;
-    }
-    ctx.globalAlpha = skin.alpha;
+    polygonPx(ctx, band);
+    ctx.fillStyle = skin.body;
+    ctx.globalAlpha = skin.alpha < 1 ? skin.alpha : 0.82;
     ctx.fill();
     ctx.globalAlpha = 1;
-    if (skin.brushed) {
-      ctx.save();
-      ctx.clip();
-      ctx.lineWidth = 1;
-      for (let k = 1; k < 9; k++) {
-        const off = (W * k) / 9 + ((k * 7) % 3) * 0.2;
-        const a = rc.mmToPx(this.Q(0, off));
-        const b = rc.mmToPx(this.Q(L, off));
-        ctx.strokeStyle = k % 2 ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.07)';
-        ctx.beginPath();
-        ctx.moveTo(a[0], a[1]);
-        ctx.lineTo(b[0], b[1]);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-    polygonPx(ctx, body);
-    ctx.lineWidth = rc.selected ? 2 * rc.dpr : 1;
-    ctx.strokeStyle = rc.selected ? rc.theme.accent : 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = rc.selected ? 1.5 * rc.dpr : 1;
+    ctx.strokeStyle = rc.selected ? rc.theme.accent : 'rgba(0,0,0,0.35)';
     ctx.stroke();
     ctx.restore();
 
-    const bodyBg = rc.theme.bg;
-    const ink = skinInk(skin, bodyBg);
-    const unitKind: ScaleKind = rc.unit === 'mm' ? 'mm' : rc.unit === 'cm' ? 'cm' : 'inch';
-    const range = (zero: number, flip: boolean): [number, number] => {
-      const v0 = flip ? zero : -zero;
-      const v1 = flip ? zero - L : L - zero;
-      return [Math.min(v0, v1), Math.max(v0, v1)];
-    };
-
+    const ink = skinInk(skin, rc.theme.bg);
+    const kind: ScaleKind = rc.unit === 'mm' ? 'mm' : rc.unit === 'cm' ? 'cm' : 'inch';
+    const v0 = s.flip ? s.zero : -s.zero;
+    const v1 = s.flip ? s.zero - L : L - s.zero;
     ctx.save();
-    polygonPx(ctx, body);
+    polygonPx(ctx, band);
     ctx.clip();
-    if (this.split()) {
-      const [f, t] = range(s.zero, false);
-      drawScale(rc, { zero: this.P(s.zero), dir: u, normal: n, from: f, to: t, kind: 'mm', ink, textUp: n });
-      if (s.bottom === 'inch') {
-        drawScale(rc, {
-          zero: this.Q(s.zero, W),
-          dir: u,
-          normal: scale(n, -1),
-          from: f,
-          to: t,
-          kind: 'inch',
-          ink,
-          textUp: n,
-          inchDen: rc.fractionDen,
-        });
-      } else {
-        const [f2, t2] = range(L, true);
-        drawScale(rc, {
-          zero: this.Q(L, W),
-          dir: scale(u, -1),
-          normal: scale(n, -1),
-          from: f2,
-          to: t2,
-          kind: 'mm',
-          ink,
-          textUp: n,
-        });
-      }
-    } else {
-      const [f, t] = range(s.zero, s.flip);
-      drawScale(rc, {
-        zero: this.P(s.zero),
-        dir: s.flip ? scale(u, -1) : u,
-        normal: n,
-        from: f,
-        to: t,
-        kind: unitKind,
-        ink,
-        textUp: n,
-        inchDen: rc.fractionDen,
-      });
-    }
+    drawScale(rc, {
+      zero: this.P(s.zero),
+      dir: s.flip ? scale(u, -1) : u,
+      normal: n,
+      from: Math.min(v0, v1),
+      to: Math.max(v0, v1),
+      kind,
+      ink,
+      textUp: n,
+      inchDen: rc.fractionDen,
+      tickScale: TICK_SCALE,
+      labelSize: 2,
+    });
     ctx.restore();
 
-    // Zero indicator
+    // Zero indicator.
     const z0 = rc.mmToPx(this.P(s.zero));
-    const z1 = rc.mmToPx(this.Q(s.zero - 1.2, -2));
-    const z2 = rc.mmToPx(this.Q(s.zero + 1.2, -2));
+    const z1 = rc.mmToPx(this.Q(s.zero - 1, -1.6));
+    const z2 = rc.mmToPx(this.Q(s.zero + 1, -1.6));
     ctx.save();
     ctx.fillStyle = rc.theme.accent;
     ctx.beginPath();
@@ -668,55 +540,45 @@ export class RulerTool extends BaseTool implements ToolInstance {
     ctx.fill();
     ctx.restore();
 
-    // Markers with sighting lines
+    // Solid marker lines across the whole usable area (§7.8 sighting lines).
     const b = this.env.bounds();
-    const sight = (t: number, dir: Vec) =>
-      Math.min(90, rayExitT(this.P(t), dir, { x: b.x - 2, y: b.y - 2, w: b.w + 4, h: b.h + 4 }));
-    const markers: ['a' | 'b', string][] = [
+    const ko = this.knobOff();
+    const marks: ['a' | 'b', string][] = [
       ['a', rc.theme.accent],
       ['b', rc.theme.accent2],
     ];
-    for (const [k, color] of markers) {
+    for (const [k, color] of marks) {
       const t = s[k];
-      if (this.split()) {
-        const down = sight(t, scale(n, -1));
-        drawMarkerLine(rc, this.Q(t, W / 2), this.Q(t, -4), this.Q(t, -down), color);
-        const upStart = this.Q(t, W);
-        const up = Math.min(90, rayExitT(upStart, n, b));
-        drawMarkerLine(rc, this.Q(t, W / 2), this.Q(t, W + 4), this.Q(t, W + up), color);
-      } else {
-        const down = sight(t, scale(n, -1));
-        drawMarkerLine(rc, this.Q(t, this.knobOff()), this.Q(t, -5), this.Q(t, -down), color);
-      }
-      if (!rc.inLoupe) drawKnob(rc, this.Q(t, this.knobOff()), color, { active: rc.activeHandleId === k });
+      const base = this.P(t);
+      const down = rayExitT(base, scale(n, -1), b);
+      const up = rayExitT(base, n, b);
+      drawMarkerLine(rc, this.Q(t, -down), base, this.Q(t, up), color);
+      if (!rc.inLoupe) drawKnob(rc, this.Q(t, ko), color, { active: rc.activeHandleId === k });
     }
 
     if (!rc.inLoupe) {
-      // Value tag
-      const r = this.readouts()[0];
-      const val = fmtLength(r.value, r.uncertainty, rc.unit, rc.fractionDen);
-      const mid = (s.a + s.b) / 2;
-      const tagAt = this.split()
-        ? this.Q(clamp(mid, 8, L - 8), W / 2)
-        : Math.abs(s.b - s.a) > 18
-          ? this.Q(mid, this.knobOff())
-          : this.Q(clamp(mid, 8, L - 8), W + 2.6);
-      if (!this.split() || Math.abs(s.b - s.a) > 14) {
-        drawTag(rc, `${r.label} ${val}`, tagAt, n, rc.theme.ink, rc.theme.bg);
-      }
-      if (s.tool === 'leapfrog' && s.segments.length) {
-        drawText(rc, `+${s.segments.length}`, this.Q(Math.max(4, s.a - 4), W + 3), n, {
-          sizeMm: 2.6,
-          color: rc.theme.accent,
+      if (s.tool === 'leapfrog') {
+        const tt = i18n.t.bind(i18n);
+        const off = ko > 0 ? ko + 4.2 : ko - 4.2;
+        drawText(rc, tt('leap.startHere'), this.Q(s.a, off), n, {
+          sizeMm: 3.4,
+          color: rc.theme.ink,
           halo: rc.theme.bg,
+          weight: 700,
+        });
+        drawText(rc, tt('leap.markHere'), this.Q(s.b, off), n, {
+          sizeMm: 3.4,
+          color: rc.theme.ink,
+          halo: rc.theme.bg,
+          weight: 700,
         });
       }
       if (rc.selected) {
-        drawKnob(rc, this.Q(CAP / 2, W / 2), '#334155', {
-          glyph: 'rotate',
-          active: rc.activeHandleId === 'rot',
+        drawKnob(rc, this.Q(END, STRIP / 2), '#334155', {
+          glyph: 'extend',
+          active: rc.activeHandleId === 'start',
         });
-        drawKnob(rc, this.Q(L - CAP / 2, W / 2), '#334155', {
+        drawKnob(rc, this.Q(L - END, STRIP / 2), '#334155', {
           glyph: 'extend',
           active: rc.activeHandleId === 'end',
         });
@@ -727,5 +589,11 @@ export class RulerTool extends BaseTool implements ToolInstance {
 
 export function isRulerState(x: unknown): x is RulerState {
   const o = x as RulerState;
-  return !!o && o.v === 1 && Array.isArray(o.origin) && typeof o.length === 'number';
+  return (
+    !!o &&
+    o.v === 1 &&
+    (o.tool === 'ruler' || o.tool === 'leapfrog') &&
+    Array.isArray(o.origin) &&
+    typeof o.length === 'number'
+  );
 }

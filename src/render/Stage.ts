@@ -35,6 +35,7 @@ export interface StageSettings {
   snapAngles: boolean;
   haptics: boolean;
   nudgeStep: 'px' | '0.05';
+  canvasLabels: boolean;
 }
 
 export const DEFAULT_STAGE_SETTINGS: StageSettings = {
@@ -52,6 +53,7 @@ export const DEFAULT_STAGE_SETTINGS: StageSettings = {
   snapAngles: true,
   haptics: true,
   nudgeStep: 'px',
+  canvasLabels: false,
 };
 
 export interface UncertaintyModel {
@@ -68,6 +70,8 @@ export interface StageCallbacks {
   onLongPress?(tool: ToolInstance, handle: Handle, cssPos: Vec): void;
   onDoubleTapEmpty?(): void;
   onTwoFingerTap?(): void;
+  /** Two fingers held still on empty canvas: positions in mm (e.g. place gap rulers there). */
+  onTwoFingerHold?(a: Vec, b: Vec): void;
   /** CSS position of the handle being dragged (HUD avoidance), or null. */
   onActiveHandle?(cssPos: Vec | null): void;
   onFirstInteraction?(): void;
@@ -113,7 +117,10 @@ interface EmptyContact {
   pos: Vec;
   moved: boolean;
   group: number | null;
+  consumed?: boolean;
 }
+
+const TWO_FINGER_HOLD_MS = 600;
 
 export class Stage {
   readonly canvas: HTMLCanvasElement;
@@ -148,10 +155,11 @@ export class Stage {
   private groupSeq = 0;
   private lastTap: { at: number; pos: Vec } | null = null;
   private pulse: { pos: Vec; until: number } | null = null;
+  private holdTimer: number | null = null;
   private lastHandle: { toolId: string; handle: Handle } | null = null;
   private ro: ResizeObserver;
   private interacted = false;
-  private placeInsets: [number, number] = [0, 0];
+  private placeInsets: [number, number, number, number] = [0, 0, 0, 0];
   private cb: StageCallbacks;
   /** Resolves after the first non-zero layout (tools can only be placed once the size is known). */
   readonly ready: Promise<void>;
@@ -257,8 +265,7 @@ export class Stage {
           screenProtector: this.model.protector,
           edges,
         }).U,
-      pointU: () =>
-        pointUncertainty((this.transform.sx + this.transform.sy) / 2, this.model.protector),
+      pointU: () => pointUncertainty((this.transform.sx + this.transform.sy) / 2, this.model.protector),
       relCal: () => this.model.relCal,
       tickSnapMm: () => {
         if (!this.settings.snapTicks) return 0;
@@ -400,6 +407,21 @@ export class Stage {
     this.invalidate();
   }
 
+  /** Move the pinned lens focus (arrow keys, §7.1). */
+  moveLens(dx: -1 | 0 | 1, dy: -1 | 0 | 1, stepMm = 0.25): void {
+    if (!this.pinned) return;
+    const a = this.canvasAreaMm();
+    this.pinned.focus = [
+      Math.min(a.w, Math.max(0, this.pinned.focus[0] + dx * stepMm)),
+      Math.min(a.h, Math.max(0, this.pinned.focus[1] + dy * stepMm)),
+    ];
+    this.invalidate();
+  }
+
+  isLensPinned(): boolean {
+    return !!this.pinned;
+  }
+
   // ---------- geometry ----------
 
   mmPerCssPx(): number {
@@ -419,8 +441,8 @@ export class Stage {
   }
 
   /** CSS px covered by chrome at the top / bottom (tools are placed clear of it). */
-  setPlacementInsets(topCss: number, bottomCss: number): void {
-    this.placeInsets = [topCss, bottomCss];
+  setPlacementInsets(topCss: number, bottomCss: number, leftCss = 0, rightCss = 0): void {
+    this.placeInsets = [topCss, bottomCss, leftCss, rightCss];
   }
 
   placeBoundsMm(): RectMm {
@@ -428,8 +450,13 @@ export class Stage {
     const mmPer = this.mmPerCssPx();
     const top = Math.max(b.y, this.placeInsets[0] * mmPer);
     const bottom = Math.min(b.y + b.h, (this.cssH - this.placeInsets[1]) * mmPer);
-    if (bottom - top < 40) return b;
-    return { x: b.x, y: top, w: b.w, h: bottom - top };
+    const left = Math.max(b.x, this.placeInsets[2] * mmPer);
+    const right = Math.min(b.x + b.w, (this.cssW - this.placeInsets[3]) * mmPer);
+    const y = bottom - top >= 40 ? top : b.y;
+    const h = bottom - top >= 40 ? bottom - top : b.h;
+    const x = right - left >= 40 ? left : b.x;
+    const w = right - left >= 40 ? right - left : b.w;
+    return { x, y, w, h };
   }
 
   cssSize(): Vec {
@@ -575,12 +602,29 @@ export class Stage {
           }
         }
         this.empty.set(e.pointerId, { downAt: performance.now(), pos: css, moved: false, group });
+        this.armTwoFingerHold();
         break;
       }
       case 'ignore':
         break;
     }
   };
+
+  /** Two still fingers on empty canvas for 600 ms → onTwoFingerHold (not in Strict shield mode). */
+  private armTwoFingerHold(): void {
+    if (this.holdTimer) clearTimeout(this.holdTimer);
+    this.holdTimer = null;
+    const list = [...this.empty.values()];
+    if (list.length !== 2 || this.settings.shield === 'strict' || this.locked) return;
+    this.holdTimer = window.setTimeout(() => {
+      this.holdTimer = null;
+      const now = [...this.empty.values()];
+      if (now.length !== 2 || now.some((c) => c.moved)) return;
+      now.forEach((c) => (c.consumed = true));
+      this.haptic('tick');
+      this.cb.onTwoFingerHold?.(this.transform.cssPxToMm(now[0].pos), this.transform.cssPxToMm(now[1].pos));
+    }, TWO_FINGER_HOLD_MS);
+  }
 
   private capture(e: PointerEvent): void {
     try {
@@ -700,7 +744,11 @@ export class Stage {
       return;
     }
     const c = this.empty.get(e.pointerId);
-    if (c && dist(c.pos, css) > 10) c.moved = true;
+    if (c && dist(c.pos, css) > 10) {
+      c.moved = true;
+      if (this.holdTimer) clearTimeout(this.holdTimer);
+      this.holdTimer = null;
+    }
   };
 
   private applyTwist(): void {
@@ -755,10 +803,14 @@ export class Stage {
     const c = this.empty.get(e.pointerId);
     if (c) {
       this.empty.delete(e.pointerId);
+      if (this.holdTimer) clearTimeout(this.holdTimer);
+      this.holdTimer = null;
+      if (c.consumed) return;
       const now = performance.now();
       const quick = now - c.downAt < 350 && !c.moved && e.type === 'pointerup';
       if (c.group !== null) {
         const rest = [...this.empty.values()].filter((x) => x.group === c.group);
+        if (rest.some((x) => x.consumed)) return;
         if (rest.length === 0 && quick && this.settings.shield !== 'strict') this.cb.onTwoFingerTap?.();
         return;
       }
@@ -846,6 +898,7 @@ export class Stage {
       selected: false,
       activeHandleId: active,
       largeHandles: this.settings.largeHandles,
+      tags: this.settings.canvasLabels,
     };
   }
 

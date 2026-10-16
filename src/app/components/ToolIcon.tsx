@@ -50,6 +50,13 @@ export function ToolIcon({ id, size = 22 }: { id: string; size?: number }) {
           <path d="M6 4v2M9 4v1.5M12 4v2M15 4v1.5M18 4v2" />
         </svg>
       );
+    case 'box':
+      return (
+        <svg {...p}>
+          <path d="M7 2v20M17 2v20M2 7h20M2 17h20" />
+          <rect x="7" y="7" width="10" height="10" fill="currentColor" opacity="0.18" stroke="none" />
+        </svg>
+      );
     case 'caliper':
       return (
         <svg {...p}>

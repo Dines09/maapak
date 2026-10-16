@@ -13,7 +13,8 @@ export function circleFrom3(p1: Vec, p2: Vec, p3: Vec): Circle | null {
   const [x2, y2] = p2;
   const [x3, y3] = p3;
   const D = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2));
-  const scale = Math.max(1, Math.abs(x1 - x2) + Math.abs(y1 - y2) + Math.abs(x2 - x3) + Math.abs(y2 - y3)) ** 2;
+  const scale =
+    Math.max(1, Math.abs(x1 - x2) + Math.abs(y1 - y2) + Math.abs(x2 - x3) + Math.abs(y2 - y3)) ** 2;
   if (Math.abs(D) < 1e-9 * scale) return null;
   const s1 = x1 * x1 + y1 * y1;
   const s2 = x2 * x2 + y2 * y2;

@@ -2,18 +2,25 @@
 
 **Live app:** https://dines09.github.io/maapak/
 
-Maapak is an installable web app (PWA) that turns a phone screen into a calibrated measuring tool for field engineers: steel rule, gap rulers (L × W), dual-unit rule, leapfrog chain and T-square. Every reading shows its uncertainty and never shows more decimals than the phone can deliver. Everything stays on the device and works offline.
+Maapak is an installable web app (PWA) that turns a phone screen into a calibrated measuring kit for field engineers:
 
-The full product specification is in [MAAPAK_SPEC.md](MAAPAK_SPEC.md). Phases 0 and 1 are built. See [CHANGELOG.md](CHANGELOG.md).
+- thin ruler (both ends extend), L × W box, gap rulers and leapfrog chain
+- vernier caliper (with Learn mode), protractor and two-line angle
+- circle / O-ring / washer fits, hex nut with spanner suggestion, rectangle and polygon area
+
+Every reading shows its uncertainty and never shows more decimals than the phone can deliver. Everything stays on the device and works offline.
+
+The full product specification is in [MAAPAK_SPEC.md](MAAPAK_SPEC.md). Phases 0, 1 and 2 are built. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Using it
 
 1. Open the live link on an Android phone in Chrome (iPhone: Safari). Choose **Install** / *Add to Home Screen* for a full-screen app.
 2. **Set up:** mark the flat part of the screen (curved edges, punch-hole), then calibrate with any bank/ID card or, for the best accuracy, a steel rule.
-3. Put the part on the screen and drag the round knobs so the thin lines touch its ends. A loupe shows the edge while you drag. Hold a second finger anywhere for ×0.1 precision.
-4. **Save** stores the reading in a record, with an optional photo.
+3. Put the part on the screen and drag the round knobs so the thick lines touch its edges. Drag the small ⇔ knobs at the ends to stretch or turn the scale. A lens magnifies the edge while you drag. Hold a second finger anywhere for ×0.1 precision.
+4. The reading sits in a small pill at the top. Tap it for ZERO, HOLD, tolerance, repeat & average and Save.
+5. Hold two fingers still on empty glass to drop two parallel rulers right there.
 
-Before calibration the app shows **"Not calibrated — estimate only"**. If the display scale changes (browser zoom, Android "Display size"), measuring is disabled until you recalibrate.
+Before calibration a small **⚠** sits in the top bar (estimate only). If the display scale changes (browser zoom, Android "Display size"), measuring is disabled until you recalibrate.
 
 ## Development
 

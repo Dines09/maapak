@@ -26,6 +26,7 @@ export interface Settings {
   loupe: boolean;
   loupeZoom: number;
   nudgeStep: 'px' | '0.05';
+  canvasLabels: boolean;
   language: 'en' | 'hi';
   background: BackgroundSpec;
   bgByTool: Record<string, BackgroundSpec>;
@@ -54,6 +55,7 @@ export const DEFAULT_SETTINGS: Settings = {
   loupe: true,
   loupeZoom: 4,
   nudgeStep: 'px',
+  canvasLabels: false,
   language: 'en',
   background: { color: '#ffffff', pattern: 'none' },
   bgByTool: {},

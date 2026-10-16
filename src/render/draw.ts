@@ -37,6 +37,10 @@ export interface ScaleSpec {
   /** Text up-vector (mm space); labels are kept upright for reading. */
   textUp: Vec;
   inchDen?: 16 | 32 | 64;
+  /** Tick length multiplier (thin scales use < 1). */
+  tickScale?: number;
+  /** Label height in mm. */
+  labelSize?: number;
 }
 
 /** Text rotation so that `up` (mm-space) points up on screen, never upside down. */
@@ -116,7 +120,7 @@ export function drawScale(rc: RenderContext, spec: ScaleSpec): void {
       if (t.widthPx !== w) continue;
       const base = add(spec.zero, scale(spec.dir, t.posMm));
       let a = rc.mmToPx(base);
-      let b = rc.mmToPx(add(base, scale(spec.normal, t.lengthMm)));
+      let b = rc.mmToPx(add(base, scale(spec.normal, t.lengthMm * (spec.tickScale ?? 1))));
       if (axisX) {
         const x = crisp(a[0], w);
         a = [x, a[1]];
@@ -131,14 +135,18 @@ export function drawScale(rc: RenderContext, spec: ScaleSpec): void {
     ctx.stroke();
   }
   // Labels sit just beyond the longest tick.
-  const labelSize = 2.4;
+  const labelSize = spec.labelSize ?? 2.4;
+  if (labelSize <= 0) {
+    ctx.restore();
+    return;
+  }
   const every = rc.inLoupe ? 1 : labelStride(rc, spec);
   let k = 0;
   for (const t of ticks) {
     if (!t.label) continue;
     if (k++ % every !== 0) continue;
     const base = add(spec.zero, scale(spec.dir, t.posMm));
-    const at = add(base, scale(spec.normal, t.lengthMm + 0.6 + labelSize * 0.6));
+    const at = add(base, scale(spec.normal, t.lengthMm * (spec.tickScale ?? 1) + 0.5 + labelSize * 0.6));
     drawText(rc, t.label, at, spec.textUp, { sizeMm: labelSize, color: spec.ink });
   }
   ctx.restore();
@@ -207,39 +215,37 @@ export function drawKnob(
 }
 
 /**
- * A marker/alignment line: 1 device px exact line plus a faint halo for visibility.
- * Solid from a → mid, dashed from mid → b (sighting extension, §7.8).
+ * Alignment line: solid along its whole length (no dashes), thick and in the ink colour with the most
+ * contrast against the background, with a 1-device-px coloured centre line marking the exact position.
+ * `_mid` is kept for call compatibility.
  */
-export function drawMarkerLine(rc: RenderContext, a: Vec, mid: Vec, b: Vec, color: string): void {
+export function drawMarkerLine(rc: RenderContext, a: Vec, _mid: Vec, b: Vec, color: string): void {
   const { ctx } = rc;
   const pa = rc.mmToPx(a);
-  const pm = rc.mmToPx(mid);
   const pb = rc.mmToPx(b);
   const horiz = Math.abs(pa[1] - pb[1]) < 1e-6;
   const vert = Math.abs(pa[0] - pb[0]) < 1e-6;
   const fix = (p: Vec): Vec => (vert ? [crisp(p[0], 1), p[1]] : horiz ? [p[0], crisp(p[1], 1)] : p);
   ctx.save();
   ctx.lineCap = 'butt';
-  ctx.strokeStyle = color;
-  ctx.globalAlpha = 0.22;
-  ctx.lineWidth = 5 * rc.dpr;
+  ctx.strokeStyle = rc.theme.ink;
+  ctx.globalAlpha = rc.inLoupe ? 0.35 : 0.95;
+  ctx.lineWidth = (rc.inLoupe ? 1.4 : 2.4) * rc.dpr;
   ctx.beginPath();
-  line(ctx, pa, pm);
+  line(ctx, pa, pb);
   ctx.stroke();
   ctx.globalAlpha = 1;
+  ctx.strokeStyle = color;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  line(ctx, fix(pa), fix(pm));
-  ctx.stroke();
-  ctx.setLineDash([4 * rc.dpr, 3 * rc.dpr]);
-  ctx.beginPath();
-  line(ctx, fix(pm), fix(pb));
+  line(ctx, fix(pa), fix(pb));
   ctx.stroke();
   ctx.restore();
 }
 
 /** Small rounded label (on-canvas value tag). */
 export function drawTag(rc: RenderContext, text: string, atMm: Vec, up: Vec, bg: string, fg: string): void {
+  if (!rc.tags) return;
   const { ctx } = rc;
   const p = rc.mmToPx(atMm);
   ctx.save();
@@ -283,7 +289,13 @@ export function circlePoints(c: Vec, r: number, segments = 144): Vec[] {
 }
 
 /** Exact 1-device-px outline with a faint halo for visibility (like marker lines). */
-export function drawOutline(rc: RenderContext, pts: readonly Vec[], closed: boolean, color: string, fill?: string): void {
+export function drawOutline(
+  rc: RenderContext,
+  pts: readonly Vec[],
+  closed: boolean,
+  color: string,
+  fill?: string,
+): void {
   const { ctx } = rc;
   ctx.save();
   pathMm(rc, pts, closed);

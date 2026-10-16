@@ -1,7 +1,18 @@
 // Vernier caliper (§6.2): beam with main scale, sliding jaw with a vernier plate rendered from the jaw
 // position, outside jaws (OD / length / width) and inside knife jaws (ID). No depth rod (2D screen).
 import type { FeatureKind, Vec } from '../../core/types';
-import { add, dist, fitShift, inRect, normAngle, rad2deg, rotateAbout, snapAngle, sub, type RectMm } from '../../core/geometry';
+import {
+  add,
+  dist,
+  fitShift,
+  inRect,
+  normAngle,
+  rad2deg,
+  rotateAbout,
+  snapAngle,
+  sub,
+  type RectMm,
+} from '../../core/geometry';
 import { MM_PER_INCH } from '../../core/units';
 import type { Handle, LearnInfo, Readout, RenderContext, ToolAction, ToolInstance } from '../../render/types';
 import { SKINS, skinInk } from '../../render/skins';
@@ -49,7 +60,13 @@ const FEATURE_KIND: Record<CaliperFeature, FeatureKind> = {
 };
 
 /** Vernier geometry per least count: divisions N, division length d (in main units), label step. */
-export function vernierSpec(lc: LeastCount): { N: number; d: number; labelEvery: number; unitMm: number; lcUnit: number } {
+export function vernierSpec(lc: LeastCount): {
+  N: number;
+  d: number;
+  labelEvery: number;
+  unitMm: number;
+  lcUnit: number;
+} {
   switch (lc) {
     case 0.1:
       return { N: 10, d: 0.9, labelEvery: 5, unitMm: 1, lcUnit: 0.1 };
@@ -101,7 +118,14 @@ export class CaliperTool extends BaseTool implements ToolInstance {
   readonly id: string;
   readonly tool = 'caliper' as const;
   s: CaliperState;
-  private drag: { id: string; p0: Vec; s0: CaliperState; c0: Vec; a0: number; snapped: number | null } | null = null;
+  private drag: {
+    id: string;
+    p0: Vec;
+    s0: CaliperState;
+    c0: Vec;
+    a0: number;
+    snapped: number | null;
+  } | null = null;
 
   constructor(state: CaliperState) {
     super();
@@ -132,7 +156,12 @@ export class CaliperTool extends BaseTool implements ToolInstance {
 
   outline(): Vec[] {
     const L = this.s.length;
-    return [this.A(-BACK, -JAW - 1), this.A(L, -JAW - 1), this.A(L, BEAM + KNIFE + 1), this.A(-BACK, BEAM + KNIFE + 1)];
+    return [
+      this.A(-BACK, -JAW - 1),
+      this.A(L, -JAW - 1),
+      this.A(L, BEAM + KNIFE + 1),
+      this.A(-BACK, BEAM + KNIFE + 1),
+    ];
   }
 
   attach(env: Parameters<BaseTool['attach']>[0]): void {
@@ -198,7 +227,13 @@ export class CaliperTool extends BaseTool implements ToolInstance {
     if (dist(p, grip) <= tol) return { id: 'jaw', kind: 'edge', posMm: grip };
     const [t, o] = toLocal(s.origin, s.angle, p);
     // Sliding jaw / vernier plate also drags the jaw.
-    if (t >= s.s + PLATE_START && t <= s.s + this.plateEnd() && o >= -JAW && o <= SCALE_BASE && !(t < s.s && o < PLATE_START)) {
+    if (
+      t >= s.s + PLATE_START &&
+      t <= s.s + this.plateEnd() &&
+      o >= -JAW &&
+      o <= SCALE_BASE &&
+      !(t < s.s && o < PLATE_START)
+    ) {
       return { id: 'jaw', kind: 'edge', posMm: p };
     }
     if (t >= s.length - 8 && t <= s.length && o >= 0 && o <= BEAM) {
@@ -213,7 +248,14 @@ export class CaliperTool extends BaseTool implements ToolInstance {
 
   onDragStart(h: Handle, p: Vec): void {
     const c0 = this.center();
-    this.drag = { id: h.id, p0: p, s0: structuredClone(this.s), c0, a0: rad2deg(Math.atan2(p[1] - c0[1], p[0] - c0[0])), snapped: null };
+    this.drag = {
+      id: h.id,
+      p0: p,
+      s0: structuredClone(this.s),
+      c0,
+      a0: rad2deg(Math.atan2(p[1] - c0[1], p[0] - c0[0])),
+      snapped: null,
+    };
   }
 
   onDragMove(h: Handle, p: Vec, _precision = false): void {
@@ -257,9 +299,13 @@ export class CaliperTool extends BaseTool implements ToolInstance {
 
   actions(): ToolAction[] {
     const s = this.s;
-    const cycle = <T,>(list: readonly T[], v: T): T => list[(list.indexOf(v) + 1) % list.length];
+    const cycle = <T>(list: readonly T[], v: T): T => list[(list.indexOf(v) + 1) % list.length];
     return [
-      { id: 'feature', labelKey: `caliper.feature.${s.feature}`, run: () => (s.feature = cycle(['OD', 'ID', 'W', 'L'] as const, s.feature)) },
+      {
+        id: 'feature',
+        labelKey: `caliper.feature.${s.feature}`,
+        run: () => (s.feature = cycle(['OD', 'ID', 'W', 'L'] as const, s.feature)),
+      },
       {
         id: 'lc',
         labelKey: `caliper.lc.${String(s.lc).replace('.', '_')}`,
@@ -285,14 +331,31 @@ export class CaliperTool extends BaseTool implements ToolInstance {
     const s = this.s;
     const U = this.env.uncertainty(s.s, frameU(s.angle), 2);
     const kind = FEATURE_KIND[s.feature];
-    const r: Readout = { label: this.label, kind, value: s.s, uncertainty: U, primary: true, unit: 'length', nameKey: `kind.${kind}` };
+    const r: Readout = {
+      label: this.label,
+      kind,
+      value: s.s,
+      uncertainty: U,
+      primary: true,
+      unit: 'length',
+      nameKey: `kind.${kind}`,
+    };
     if (s.learn && s.skin === 'vernier') r.learn = vernierReading(s.s, s.lc);
     return [r];
   }
 
   toMeasurements(): ToolMeasurement[] {
     const [r] = this.readouts();
-    return [{ tool: this.tool, kind: r.kind, label: r.label, value: r.value, uncertainty: r.uncertainty, toolState: this.serialize() }];
+    return [
+      {
+        tool: this.tool,
+        kind: r.kind,
+        label: r.label,
+        value: r.value,
+        uncertainty: r.uncertainty,
+        toolState: this.serialize(),
+      },
+    ];
   }
 
   serialize(): CaliperState {
@@ -313,7 +376,12 @@ export class CaliperTool extends BaseTool implements ToolInstance {
     const fill = (pts: Vec[], alpha = 1) => {
       polygonPx(ctx, pts);
       if (skin.body2) {
-        const g = ctx.createLinearGradient(pts[0][0], pts[0][1], pts[pts.length - 1][0], pts[pts.length - 1][1]);
+        const g = ctx.createLinearGradient(
+          pts[0][0],
+          pts[0][1],
+          pts[pts.length - 1][0],
+          pts[pts.length - 1][1],
+        );
         g.addColorStop(0, skin.body);
         g.addColorStop(0.5, skin.body2);
         g.addColorStop(1, skin.body);
@@ -331,22 +399,84 @@ export class CaliperTool extends BaseTool implements ToolInstance {
 
     ctx.save();
     // Beam and fixed jaws.
-    fill(P([[-BACK, 0], [L, 0], [L, BEAM], [-BACK, BEAM]]));
-    fill(P([[-BACK, 0], [0, 0], [0, -JAW], [-2.5, -JAW], [-BACK, -JAW * 0.45]]));
-    fill(P([[0, BEAM], [0, BEAM + KNIFE], [3, BEAM + KNIFE * 0.75], [3, BEAM]]));
+    fill(
+      P([
+        [-BACK, 0],
+        [L, 0],
+        [L, BEAM],
+        [-BACK, BEAM],
+      ]),
+    );
+    fill(
+      P([
+        [-BACK, 0],
+        [0, 0],
+        [0, -JAW],
+        [-2.5, -JAW],
+        [-BACK, -JAW * 0.45],
+      ]),
+    );
+    fill(
+      P([
+        [0, BEAM],
+        [0, BEAM + KNIFE],
+        [3, BEAM + KNIFE * 0.75],
+        [3, BEAM],
+      ]),
+    );
     // Main scale on the beam.
     ctx.save();
-    polygonPx(ctx, P([[-BACK, 0], [L, 0], [L, BEAM], [-BACK, BEAM]]));
+    polygonPx(
+      ctx,
+      P([
+        [-BACK, 0],
+        [L, 0],
+        [L, BEAM],
+        [-BACK, BEAM],
+      ]),
+    );
     ctx.clip();
     if (s.lc === 'in') this.drawInchMain(rc, ink);
-    else drawScale(rc, { zero: this.A(0, SCALE_BASE), dir: u, normal: n, from: 0, to: L, kind: 'cm', ink, textUp: n });
+    else
+      drawScale(rc, {
+        zero: this.A(0, SCALE_BASE),
+        dir: u,
+        normal: n,
+        from: 0,
+        to: L,
+        kind: 'cm',
+        ink,
+        textUp: n,
+      });
     ctx.restore();
 
     // Sliding jaw: outside jaw, knife, vernier plate.
-    fill(P([[sj, PLATE_START], [sj + 9, PLATE_START], [sj + 9, -JAW * 0.45], [sj + 2.5, -JAW], [sj, -JAW]]));
-    fill(P([[sj, BEAM], [sj, BEAM + KNIFE], [sj - 3, BEAM + KNIFE * 0.75], [sj - 3, BEAM + 2], [sj + 10, BEAM + 2], [sj + 10, BEAM]]));
+    fill(
+      P([
+        [sj, PLATE_START],
+        [sj + 9, PLATE_START],
+        [sj + 9, -JAW * 0.45],
+        [sj + 2.5, -JAW],
+        [sj, -JAW],
+      ]),
+    );
+    fill(
+      P([
+        [sj, BEAM],
+        [sj, BEAM + KNIFE],
+        [sj - 3, BEAM + KNIFE * 0.75],
+        [sj - 3, BEAM + 2],
+        [sj + 10, BEAM + 2],
+        [sj + 10, BEAM],
+      ]),
+    );
     const pe = this.plateEnd();
-    const plate = P([[sj + PLATE_START, PLATE_START], [sj + pe, PLATE_START], [sj + pe, SCALE_BASE], [sj + PLATE_START, SCALE_BASE]]);
+    const plate = P([
+      [sj + PLATE_START, PLATE_START],
+      [sj + pe, PLATE_START],
+      [sj + pe, SCALE_BASE],
+      [sj + PLATE_START, SCALE_BASE],
+    ]);
     fill(plate);
     if (s.skin === 'vernier') this.drawVernier(rc, ink);
     ctx.restore();
@@ -355,7 +485,8 @@ export class CaliperTool extends BaseTool implements ToolInstance {
     const sight = 60;
     const col = [rc.theme.accent, rc.theme.accent2];
     [0, sj].forEach((t, i) => {
-      if (ins) drawMarkerLine(rc, this.A(t, BEAM), this.A(t, BEAM + KNIFE), this.A(t, BEAM + KNIFE + sight), col[i]);
+      if (ins)
+        drawMarkerLine(rc, this.A(t, BEAM), this.A(t, BEAM + KNIFE), this.A(t, BEAM + KNIFE + sight), col[i]);
       else drawMarkerLine(rc, this.A(t, 0), this.A(t, -JAW), this.A(t, -JAW - sight), col[i]);
     });
 
@@ -363,9 +494,20 @@ export class CaliperTool extends BaseTool implements ToolInstance {
     if (s.skin === 'digital') this.drawLcd(rc);
 
     if (!rc.inLoupe) {
-      drawKnob(rc, this.A(sj + GRIP[0], GRIP[1]), rc.theme.accent2, { active: rc.activeHandleId === 'jaw', glyph: 'extend' });
-      if (rc.selected) drawKnob(rc, this.A(L - 4, BEAM / 2), '#334155', { glyph: 'rotate', active: rc.activeHandleId === 'rot' });
-      drawText(rc, ins ? 'ID' : s.feature, this.A(-BACK / 2, BEAM / 2), n, { sizeMm: 2.6, color: ink, weight: 800 });
+      drawKnob(rc, this.A(sj + GRIP[0], GRIP[1]), rc.theme.accent2, {
+        active: rc.activeHandleId === 'jaw',
+        glyph: 'extend',
+      });
+      if (rc.selected)
+        drawKnob(rc, this.A(L - 4, BEAM / 2), '#334155', {
+          glyph: 'rotate',
+          active: rc.activeHandleId === 'rot',
+        });
+      drawText(rc, ins ? 'ID' : s.feature, this.A(-BACK / 2, BEAM / 2), n, {
+        sizeMm: 2.6,
+        color: ink,
+        weight: 800,
+      });
     }
   }
 
@@ -392,7 +534,10 @@ export class CaliperTool extends BaseTool implements ToolInstance {
       ctx.stroke();
       if (long && !rc.inLoupe) {
         const lbl = s.lc === 'in' ? String(k / 5) : s.lc === 0.1 ? String(k) : String(k / sp.labelEvery);
-        drawText(rc, lbl, this.A(t, SCALE_BASE - len - 1.6), frameN(s.angle), { sizeMm: 1.8, color: hit ? rc.theme.accent : ink });
+        drawText(rc, lbl, this.A(t, SCALE_BASE - len - 1.6), frameN(s.angle), {
+          sizeMm: 1.8,
+          color: hit ? rc.theme.accent : ink,
+        });
       }
     }
     ctx.restore();
@@ -419,7 +564,10 @@ export class CaliperTool extends BaseTool implements ToolInstance {
     for (let k = 0; k <= nMax; k += 4) {
       const t = k * 0.025 * MM_PER_INCH;
       const label = k % 40 === 0 ? String(k / 40) : String((k / 4) % 10);
-      drawText(rc, label, this.A(t, SCALE_BASE + 7.6), frameN(s.angle), { sizeMm: k % 40 === 0 ? 2.4 : 1.7, color: ink });
+      drawText(rc, label, this.A(t, SCALE_BASE + 7.6), frameN(s.angle), {
+        sizeMm: k % 40 === 0 ? 2.4 : 1.7,
+        color: ink,
+      });
     }
     ctx.restore();
   }
@@ -429,7 +577,10 @@ export class CaliperTool extends BaseTool implements ToolInstance {
     const s = this.s;
     const c = rc.mmToPx(this.A(s.s + 26, -13));
     const R = 8 * rc.pxPerMm;
-    const base = Math.atan2(rc.mmToPx(this.A(0, 1))[1] - rc.mmToPx(this.A(0, 0))[1], rc.mmToPx(this.A(0, 1))[0] - rc.mmToPx(this.A(0, 0))[0]);
+    const base = Math.atan2(
+      rc.mmToPx(this.A(0, 1))[1] - rc.mmToPx(this.A(0, 0))[1],
+      rc.mmToPx(this.A(0, 1))[0] - rc.mmToPx(this.A(0, 0))[0],
+    );
     ctx.save();
     ctx.beginPath();
     ctx.arc(c[0], c[1], R, 0, Math.PI * 2);
@@ -482,18 +633,32 @@ export class CaliperTool extends BaseTool implements ToolInstance {
     polygonPx(ctx, quad);
     ctx.fillStyle = '#1e293b';
     ctx.fill();
-    const inner = [this.A(s.s + 13, -5.5), this.A(s.s + 38, -5.5), this.A(s.s + 38, -11.5), this.A(s.s + 13, -11.5)].map((p) =>
-      rc.mmToPx(p),
-    );
+    const inner = [
+      this.A(s.s + 13, -5.5),
+      this.A(s.s + 38, -5.5),
+      this.A(s.s + 38, -11.5),
+      this.A(s.s + 13, -11.5),
+    ].map((p) => rc.mmToPx(p));
     polygonPx(ctx, inner);
     ctx.fillStyle = '#c5d6a5';
     ctx.fill();
     ctx.restore();
-    drawText(rc, text, this.A(s.s + 36.5, -8.5), frameN(s.angle), { sizeMm: 4, color: '#111827', align: 'right', weight: 700 });
-    drawText(rc, `${unitLabel(unit)}   ON/ZERO · HOLD · ABS/INC`, this.A(s.s + 25.5, -13.3), frameN(s.angle), {
-      sizeMm: 1.4,
-      color: '#cbd5e1',
+    drawText(rc, text, this.A(s.s + 36.5, -8.5), frameN(s.angle), {
+      sizeMm: 4,
+      color: '#111827',
+      align: 'right',
+      weight: 700,
     });
+    drawText(
+      rc,
+      `${unitLabel(unit)}   ON/ZERO · HOLD · ABS/INC`,
+      this.A(s.s + 25.5, -13.3),
+      frameN(s.angle),
+      {
+        sizeMm: 1.4,
+        color: '#cbd5e1',
+      },
+    );
   }
 }
 

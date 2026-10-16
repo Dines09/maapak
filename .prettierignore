@@ -1,0 +1,5 @@
+dist
+dev-dist
+node_modules
+MAAPAK_SPEC.md
+package-lock.json

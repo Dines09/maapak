@@ -30,7 +30,10 @@ import {
 } from '../../render/draw';
 import { fmtLength } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
-import { KNOB_OFFSET, STRIP, TICK_SCALE } from '../ruler/RulerTool';
+import { TICK_SCALE } from '../ruler/RulerTool';
+
+const STRIP = 7;
+const KNOB_OFFSET = 4.5;
 
 export interface GapState {
   v: 1;

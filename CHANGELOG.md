@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 — Light-box UI (2026-10-16)
+
+- **Dimmed surround.** The measured region stays bright and everything outside it is dimmed: between the ruler lines, inside the L × W box, rectangle, hexagon and circle, the O-ring annulus (its hole is dimmed too), and the protractor's angle sector. It can be turned off in Settings → Display.
+- **Ticks on the lines.** The ruler has no separate scale strip any more. Two solid lines cross the screen and the ticks run along the bright region, with zero at line A, so the number at line B is the length. The box carries ticks along its top and left edges, and circles carry ticks across the diameter.
+- **Drag from the dark area.** Drag anywhere in the dimmed area around the part and the side your finger is moving towards follows it. Moving diagonally moves a corner, or two sides of a circle. Touches inside the bright area, where the part lies, are ignored (Ghost Touch Shield). Small neutral grips on the lines still work.
+- **Two-finger lines.** Holding two fingers still now drops two ruler lines at the fingers, horizontal or vertical depending on how the fingers are placed. Gap mode left the dock because a rotated ruler covers it.
+- **Leapfrog** opens edge to edge automatically.
+- **Protractor** is large by default, with the baseline along the long side and well-spaced degree numbers. You can drag in the dark area to point the arm.
+- **Hex presets** 10 · 13 · 17 · 19 · 22 sit under the canvas; tap one to set the AF.
+- **Calmer look.** Handles are small neutral grips with a coloured centre dot, and lines are a solid ink line with a 1-device-px coloured core.
+
 ## 0.2.0 — Phase 2 + UI redesign (2026-10-16)
 
 ### UI redesign (from field feedback)

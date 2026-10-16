@@ -20,7 +20,14 @@ import { suggestWrenches, metricOrInch } from '../../core/standards/hex';
 import { roundUpOneSig } from '../../core/uncertainty';
 import { formatNumber } from '../../core/units';
 import i18n from '../../i18n';
-import type { Handle, Readout, RenderContext, ToolAction, ToolInstance } from '../../render/types';
+import type {
+  Handle,
+  Readout,
+  RenderContext,
+  ToolAction,
+  ToolInstance,
+  ToolPreset,
+} from '../../render/types';
 import { drawCross, drawKnob, drawOutline, drawTag, line } from '../../render/draw';
 import { fmtLength } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
@@ -124,6 +131,31 @@ export class HexTool extends BaseTool implements ToolInstance {
     s.c = add(s.c, fitShift(this.outline(), b));
   }
 
+  spotlight(): Vec[][] {
+    return [this.corners()];
+  }
+
+  /** Drag from the dimmed area: the flat facing the finger moves. */
+  indirect(p: Vec): Handle | null {
+    if (pointInPolygon(p, this.corners())) return null;
+    const a = (Math.atan2(p[1] - this.s.c[1], p[0] - this.s.c[0]) * 180) / Math.PI;
+    const n = this.sides();
+    const k = ((Math.round(normAngle(a - this.s.angle) / this.step()) % n) + n) % n;
+    return { id: `ind:f${k}`, kind: 'point', posMm: p };
+  }
+
+  /** Common spanner sizes (§6.6.1): tap to set the overlay to that AF. */
+  presets(): ToolPreset[] {
+    return [10, 13, 17, 19, 22].map((v) => ({
+      id: `af${v}`,
+      label: `${v}`,
+      active: Math.abs(this.s.af - v) < 0.05,
+      run: () => {
+        this.s.af = v;
+      },
+    }));
+  }
+
   rotateBy(deg: number, pivot: Vec): void {
     this.s.c = rotateAbout(this.s.c, pivot, deg);
     this.s.angle = normAngle(this.s.angle + deg);
@@ -160,7 +192,7 @@ export class HexTool extends BaseTool implements ToolInstance {
   }
 
   onDragStart(h: Handle, p: Vec): void {
-    const m = /^f(\d)$/.exec(h.id);
+    const m = /^f(\d)$/.exec(h.id.replace('ind:', ''));
     if (m) this.s.last = Number(m[1]);
     this.drag = {
       id: h.id,
@@ -177,7 +209,7 @@ export class HexTool extends BaseTool implements ToolInstance {
     const s = this.s;
     const s0 = d.s0;
     const delta = sub(p, d.p0);
-    const m = /^f(\d)$/.exec(h.id);
+    const m = /^f(\d)$/.exec(h.id.replace('ind:', ''));
     if (m) {
       // Squeeze one flat; the opposite flat stays put and the centre follows.
       const dir = this.flatDir(Number(m[1]), s0);

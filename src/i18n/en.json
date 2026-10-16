@@ -390,7 +390,9 @@
     "about": "About",
     "privacy": "Everything stays on this device. No account, no analytics.",
     "canvasLabels": "Value labels on the canvas",
-    "canvasLabelsHint": "Off keeps the screen clean; the reading pill always shows the value."
+    "canvasLabelsHint": "Off keeps the screen clean; the reading pill always shows the value.",
+    "spotlight": "Dim outside the measured area",
+    "spotlightHint": "The part stays bright between the lines; everything else darkens, so you always see where the lines are."
   },
   "learn": {
     "accuracy": {
@@ -410,8 +412,8 @@
       "body": "Ruler: thin scale with two markers; drag either end to extend it in any direction.\nL × W: four lines around the part give length, width and area at once.\nGap: two parallel rulers — the gap is the width (or hold two fingers on the glass).\nLeapfrog: for parts longer than the screen — tap MARK, pencil-mark the part at line ②, slide the phone so line ① sits on that mark, repeat; uncertainty grows as √N."
     },
     "shield": {
-      "title": "Ghost touches",
-      "body": "Metal parts on a capacitive screen can create phantom touches. Only touches that start on a handle move a tool; large contact areas (palm, part) are ignored. Use Lock while placing or removing the part."
+      "title": "Touches and ghost touches",
+      "body": "The part lies in the bright area, so touches that start there never move anything (metal parts can cause phantom touches). Drag in the dark area around it instead: the nearest side follows your finger. Small round grips on the lines can be dragged too. Use Lock while placing or removing the part."
     },
     "limits": {
       "title": "What a screen cannot measure",
@@ -536,8 +538,8 @@
     "toolOptions": "Tool options"
   },
   "gesture": {
-    "gapPlaced": "Gap rulers placed at your two fingers",
-    "hint": "Tip: hold two fingers still on empty glass for a moment to drop two parallel rulers right there. Drag either end of a ruler to extend or turn it."
+    "gapPlaced": "Two lines placed at your fingers",
+    "hint": "Drag anywhere in the dark area: the side your finger moves towards follows it (diagonal moves a corner). Touches inside the bright area — where the part lies — are ignored. Hold two fingers still on the glass to drop two lines right there."
   },
   "leap": {
     "mark": "MARK",

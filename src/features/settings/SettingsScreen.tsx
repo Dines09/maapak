@@ -115,6 +115,12 @@ export function SettingsScreen() {
           />
           <Toggle label={t('settings.loupe')} checked={s.loupe} onChange={(v) => s.set({ loupe: v })} />
           <Toggle
+            label={t('settings.spotlight')}
+            hint={t('settings.spotlightHint')}
+            checked={s.spotlight}
+            onChange={(v) => s.set({ spotlight: v })}
+          />
+          <Toggle
             label={t('settings.canvasLabels')}
             hint={t('settings.canvasLabelsHint')}
             checked={s.canvasLabels}

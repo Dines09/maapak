@@ -179,6 +179,22 @@ export interface ToolInstance {
   focusOf?(handleId: string): Vec | null;
   /** Thumb wheel (§6.2, §7.2): move the tool's main adjustable feature by one detent. */
   wheel?(stepMm: number): void;
+  /** Bright measuring region (mm polygons, even-odd); everything else is dimmed. */
+  spotlight?(): Vec[][] | null;
+  /**
+   * Drag from the dimmed surround: returns a virtual handle for the side(s) a touch there should move, or
+   * null when the touch is inside the measured region (where the part lies — ignored by the shield).
+   */
+  indirect?(pMm: Vec): Handle | null;
+  /** Quick presets shown under the canvas (e.g. common spanner sizes). */
+  presets?(): ToolPreset[];
+}
+
+export interface ToolPreset {
+  id: string;
+  label: string;
+  active?: boolean;
+  run(): void;
 }
 
 export interface ToolDefinition {

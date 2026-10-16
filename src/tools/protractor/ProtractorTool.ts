@@ -18,7 +18,7 @@ import {
   sub,
   type RectMm,
 } from '../../core/geometry';
-import { angleBetween } from '../../core/geometry/fit';
+import { angleBetween, clipPolygonToRect } from '../../core/geometry/fit';
 import { angleUncertaintyDeg } from '../../core/uncertainty';
 import type { Handle, Readout, RenderContext, ToolAction, ToolInstance } from '../../render/types';
 import { SKINS, effectiveBody } from '../../render/skins';
@@ -114,10 +114,18 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
     if (this.s.placed) return;
     const b = env.placeBounds();
     const s = this.s;
-    s.R = clamp(Math.min(b.w / 2 - 3, b.h * 0.45), 18, 36);
-    s.vertex = [b.x + b.w / 2, b.y + Math.min(b.h - 8, s.R + 10 + b.h * 0.15)];
-    s.arm1 = Math.min(s.R + 14, b.x + b.w - s.vertex[0] - 2);
-    s.arm2 = s.R + 14;
+    // Big by default (§6.3): baseline along the long side, the half-disc opening to the right.
+    if (b.h > b.w * 1.2) {
+      s.R = clamp(Math.min(b.w - 8, b.h / 2 - 4), 20, 75);
+      s.base = 90;
+      s.vertex = [b.x + 4, b.y + b.h / 2];
+    } else {
+      s.R = clamp(Math.min(b.w / 2 - 4, b.h - 8), 20, 75);
+      s.base = 0;
+      s.vertex = [b.x + b.w / 2, b.y + b.h - 4];
+    }
+    s.arm1 = s.R;
+    s.arm2 = s.R;
     const c: Vec = [b.x + b.w / 2, b.y + b.h / 2];
     s.pts = [
       [c[0] - 22, c[1] + 14],
@@ -160,6 +168,28 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
       s.arm1 = Math.max(s.R * 0.6, s.arm1 * 0.92);
       s.arm2 = Math.max(s.R * 0.6, s.arm2 * 0.92);
     }
+  }
+
+  /** Bright angular sector between the baseline and the measuring arm; the rest is dimmed. */
+  spotlight(): Vec[][] | null {
+    const s = this.s;
+    if (s.mode === 'twoLine') return null;
+    const b = this.env.bounds();
+    const R = Math.hypot(b.w, b.h) * 2;
+    const pts: Vec[] = [s.vertex];
+    const n = Math.max(2, Math.ceil(s.phi / 3));
+    for (let k = 0; k <= n; k++) pts.push(add(s.vertex, scale(ccw(s.base, (k / n) * s.phi), R)));
+    return [clipPolygonToRect(pts, b)];
+  }
+
+  /** Drag from the dimmed area: the measuring arm follows the finger's direction from the vertex. */
+  indirect(p: Vec): Handle | null {
+    const s = this.s;
+    if (s.mode === 'twoLine' || dist(p, s.vertex) < 8) return null;
+    const a = normAngle(s.base - rad2deg(Math.atan2(p[1] - s.vertex[1], p[0] - s.vertex[0])));
+    const inside = s.mode === 'half' ? a >= 0 && a <= s.phi : (a + 360) % 360 <= s.phi;
+    if (inside) return null;
+    return { id: 'ind:arm', kind: 'point', posMm: p };
   }
 
   rotateBy(deg: number, pivot: Vec): void {
@@ -248,6 +278,10 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
       s.pts[i] = add(s0.pts[i], delta);
       return;
     }
+    if (h.id === 'ind:arm') {
+      this.armTo(p, d);
+      return;
+    }
     const target = add(h.id === 'arm' ? this.endOf(s0, 'arm') : this.endOf(s0, 'base'), delta);
     const v = sub(target, s.vertex);
     const len = Math.max(s.R * 0.5, Math.hypot(v[0], v[1]));
@@ -278,6 +312,22 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
       s.phi = phi;
       s.arm2 = len;
     }
+  }
+
+  /** Point the measuring arm at p (absolute direction). */
+  private armTo(p: Vec, d: NonNullable<ProtractorTool['drag']>): void {
+    const s = this.s;
+    let phi = normAngle(s.base - rad2deg(Math.atan2(p[1] - s.vertex[1], p[0] - s.vertex[0])));
+    if (s.mode === 'half') {
+      if (phi < 0) phi = phi < -90 ? 180 : 0;
+    } else if (phi < 0) phi += 360;
+    if (s.snap > 0) {
+      const q = Math.round(phi / s.snap) * s.snap;
+      if (q !== d.snapped && q % 15 === 0) this.snapHaptic();
+      d.snapped = q;
+      phi = q;
+    }
+    s.phi = phi;
   }
 
   private endOf(st: ProtractorState, which: 'arm' | 'base'): Vec {
@@ -491,7 +541,7 @@ export class ProtractorTool extends BaseTool implements ToolInstance {
     ctx.restore();
     for (let k = 0; k <= (s.mode === 'full' ? 350 : 180); k += 10) {
       const d = ccw(s.base, k);
-      drawText(rc, String(k), add(V, scale(d, s.R - 5.4)), d, { sizeMm: 2, color: ink });
+      drawText(rc, String(k), add(V, scale(d, s.R - 6)), d, { sizeMm: s.R > 40 ? 2.6 : 2, color: ink });
       if (s.mode === 'half')
         drawText(rc, String(180 - k), add(V, scale(d, s.R - 8.6)), d, {
           sizeMm: 1.6,

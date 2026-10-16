@@ -71,6 +71,10 @@ export class PolygonTool extends BaseTool implements ToolInstance {
     /* vertices are placed individually */
   }
 
+  spotlight(): Vec[][] | null {
+    return this.s.closed && this.s.pts.length >= 3 ? [this.s.pts] : null;
+  }
+
   snapTargets(): Vec[] {
     return [...this.s.pts];
   }

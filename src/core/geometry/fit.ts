@@ -198,3 +198,38 @@ export function pointInPolygon(p: Vec, pts: readonly Vec[]): boolean {
   }
   return inside;
 }
+
+/** Sutherland–Hodgman: clip a polygon to an axis-aligned rectangle. */
+export function clipPolygonToRect(
+  poly: readonly Vec[],
+  r: { x: number; y: number; w: number; h: number },
+): Vec[] {
+  type Edge = (p: Vec) => number; // >= 0 inside
+  const edges: Edge[] = [
+    (p) => p[0] - r.x,
+    (p) => r.x + r.w - p[0],
+    (p) => p[1] - r.y,
+    (p) => r.y + r.h - p[1],
+  ];
+  let out: Vec[] = [...poly];
+  for (const f of edges) {
+    if (out.length === 0) break;
+    const inp = out;
+    out = [];
+    for (let i = 0; i < inp.length; i++) {
+      const cur = inp[i];
+      const prev = inp[(i + inp.length - 1) % inp.length];
+      const fc = f(cur);
+      const fp = f(prev);
+      if (fc >= 0) {
+        if (fp < 0) out.push(lerpAt(prev, cur, fp / (fp - fc)));
+        out.push(cur);
+      } else if (fp >= 0) out.push(lerpAt(prev, cur, fp / (fp - fc)));
+    }
+  }
+  return out;
+}
+
+function lerpAt(a: Vec, b: Vec, t: number): Vec {
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+}

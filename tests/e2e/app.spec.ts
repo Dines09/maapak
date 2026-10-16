@@ -32,15 +32,35 @@ test('dragging a marker changes the reading; undo restores it', async ({ page })
   await expect.poll(() => hudValue(page)).toBe(before);
 });
 
-test('touches that start on empty canvas never move a tool (ghost touch shield)', async ({ page }) => {
+test('touches that start inside the bright (measured) area never move a tool (ghost touch shield)', async ({ page }) => {
   await skipOnboarding(page);
   const before = await hudValue(page);
   const b = await knobPos(page, 'b');
-  await page.mouse.move(b.x, b.y + 140);
+  await page.mouse.move(b.x - 25, b.y + 140);
   await page.mouse.down();
   await page.mouse.move(b.x + 60, b.y, { steps: 8 });
   await page.mouse.up();
   expect(await hudValue(page)).toBe(before);
+});
+
+test('dragging in the dimmed area moves the nearer line', async ({ page }) => {
+  await skipOnboarding(page);
+  const before = parseFloat(await hudValue(page));
+  const b = await knobPos(page, 'b');
+  // Well to the right of line B (dimmed), mid-height.
+  await page.mouse.move(b.x + 40, b.y + 150);
+  await page.mouse.down();
+  await page.mouse.move(b.x + 80, b.y + 150, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(async () => parseFloat(await hudValue(page))).toBeGreaterThan(before + 3);
+});
+
+test('hex presets set common spanner sizes', async ({ page }) => {
+  await skipOnboarding(page);
+  await page.getByTestId('dock-hex').click();
+  await page.getByTestId('preset-af13').click();
+  await expect.poll(() => hudValue(page)).toMatch(/^13/);
+  await expect(page.getByTestId('preset-af13')).toHaveClass(/bg-sky-500/);
 });
 
 test('two fingers held on empty glass drop gap rulers there', async ({ page }) => {
@@ -50,7 +70,13 @@ test('two fingers held on empty glass drop gap rulers there', async ({ page }) =
   await page.waitForTimeout(800);
   await touch(page, 'pointerup', 11, 200, 190);
   await touch(page, 'pointerup', 12, 220, 560);
-  await expect.poll(() => toolKind(page)).toBe('gapRuler');
+  await expect.poll(() => toolKind(page)).toBe('ruler');
+  // Fingers were one above the other → the lines measure vertically.
+  const angle = await page.evaluate(
+    () =>
+      (window as unknown as { __maapak: { tools: { s: { angle: number } }[] } }).__maapak.tools[0].s.angle,
+  );
+  expect(Math.abs(angle)).toBe(90);
 });
 
 test('card calibration persists across reload, and a scale change triggers the guard', async ({ page }) => {
@@ -122,7 +148,6 @@ test('every dock tool shows a reading', async ({ page }) => {
   await skipOnboarding(page);
   for (const id of [
     'box',
-    'gapRuler',
     'leapfrog',
     'caliper',
     'protractor',

@@ -7,7 +7,7 @@ import { add, dist, fitShift, norm, scale, sub, type RectMm } from '../../core/g
 import { circleFrom3, fitCircle } from '../../core/geometry/fit';
 import { roundUpOneSig } from '../../core/uncertainty';
 import type { Handle, Readout, RenderContext, ToolAction, ToolInstance } from '../../render/types';
-import { circlePoints, drawCross, drawKnob, drawOutline, drawTag, line } from '../../render/draw';
+import { circlePoints, drawCross, drawKnob, drawOutline, drawScale, drawTag, line } from '../../render/draw';
 import { fmtLength } from '../../render/format';
 import { BaseTool, clamp, newId, type ToolMeasurement } from '../base';
 
@@ -139,6 +139,23 @@ export class CircleTool extends BaseTool implements ToolInstance {
     /* circles are rotation-invariant */
   }
 
+  spotlight(): Vec[][] {
+    const s = this.s;
+    const out = [circlePoints(s.c, s.r, 120)];
+    if (s.mode === 'ring') out.push(circlePoints(s.ci, s.ri, 96));
+    return out;
+  }
+
+  /** Drag from the dimmed area: the side(s) facing the finger move (diagonal → two sides). */
+  indirect(p: Vec): Handle | null {
+    const s = this.s;
+    if (s.mode === 'points') return null;
+    if (s.mode === 'ring' && dist(p, s.ci) < s.ri)
+      return { id: `ind:i:${sector(sub(p, s.ci))}`, kind: 'point', posMm: p };
+    if (dist(p, s.c) <= s.r) return null;
+    return { id: `ind:${sector(sub(p, s.c))}`, kind: 'point', posMm: p };
+  }
+
   snapTargets(): Vec[] {
     return [this.s.c];
   }
@@ -197,6 +214,14 @@ export class CircleTool extends BaseTool implements ToolInstance {
     const s = this.s;
     const s0 = d.s0;
     const delta = sub(p, d.p0);
+    if (h.id.startsWith('ind:i:')) {
+      this.squeezeInner(h.id.slice(6), delta);
+      return;
+    }
+    if (h.id.startsWith('ind:')) {
+      this.squeezeOuter(h.id.slice(4), delta);
+      return;
+    }
     if (h.id === 'body') {
       s.c = add(s0.c, delta);
       s.ci = add(s0.ci, delta);
@@ -253,6 +278,41 @@ export class CircleTool extends BaseTool implements ToolInstance {
 
   onDragEnd(_h?: Handle): void {
     this.drag = null;
+  }
+
+  /** Move the named sides of the outer circle; the opposite sides stay put and the circle re-centres. */
+  private squeezeOuter(sides: string, delta: Vec): void {
+    const s = this.s;
+    const s0 = this.drag!.s0;
+    let W = s0.c[0] - s0.r;
+    let E = s0.c[0] + s0.r;
+    let N = s0.c[1] - s0.r;
+    let S = s0.c[1] + s0.r;
+    if (sides.includes('E')) E = Math.max(W + 2, E + delta[0]);
+    if (sides.includes('W')) W = Math.min(E - 2, W + delta[0]);
+    if (sides.includes('S')) S = Math.max(N + 2, S + delta[1]);
+    if (sides.includes('N')) N = Math.min(S - 2, N + delta[1]);
+    const h = /[EW]/.test(sides);
+    const v = /[NS]/.test(sides);
+    const d = h && v ? (E - W + (S - N)) / 2 : h ? E - W : S - N;
+    const cx = !h ? s0.c[0] : sides.includes('E') ? W + d / 2 : E - d / 2;
+    const cy = !v ? s0.c[1] : sides.includes('S') ? N + d / 2 : S - d / 2;
+    s.c = [cx, cy];
+    s.r = d / 2;
+    if (s.mode === 'ring' && s.concentric) s.ci = [cx, cy];
+    s.ri = Math.min(s.ri, s.r - 0.3);
+    s.lastRing = 'outer';
+  }
+
+  private squeezeInner(sides: string, delta: Vec): void {
+    const s = this.s;
+    const s0 = this.drag!.s0;
+    const dir = norm([
+      (sides.includes('E') ? 1 : 0) - (sides.includes('W') ? 1 : 0),
+      (sides.includes('S') ? 1 : 0) - (sides.includes('N') ? 1 : 0),
+    ]);
+    s.ri = clamp(s0.ri + dir[0] * delta[0] + dir[1] * delta[1], 0.3, s.r - 0.3);
+    s.lastRing = 'inner';
   }
 
   wheel(stepMm: number): void {
@@ -514,6 +574,20 @@ export class CircleTool extends BaseTool implements ToolInstance {
       drawOutline(rc, outer, true, rc.theme.accent);
     }
     drawCross(rc, s.c, rc.theme.ink);
+    // Tick marks across the diameter, zero at the left edge.
+    drawScale(rc, {
+      zero: [s.c[0] - s.r, s.c[1]],
+      dir: [1, 0],
+      normal: [0, -1],
+      from: 0,
+      to: 2 * s.r,
+      kind: rc.unit === 'mm' ? 'mm' : rc.unit === 'cm' ? 'cm' : 'inch',
+      ink: rc.theme.ink,
+      textUp: [0, -1],
+      inchDen: rc.fractionDen,
+      tickScale: 0.6,
+      labelSize: 2,
+    });
     if (s.mode === 'ring' && !s.concentric) drawCross(rc, s.ci, rc.theme.accent2, 1.8);
 
     // Diameter dimension line through the centre.
@@ -567,6 +641,14 @@ export class CircleTool extends BaseTool implements ToolInstance {
       });
     }
   }
+}
+
+/** Compass sector of a vector (screen y down): E, SE, S, SW, W, NW, N, NE. */
+export function sector(v: Vec): string {
+  const a = (Math.atan2(v[1], v[0]) * 180) / Math.PI;
+  const names = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'];
+  const i = ((Math.round(a / 45) % 8) + 8) % 8;
+  return names[i];
 }
 
 export function isCircleState(x: unknown): x is CircleState {

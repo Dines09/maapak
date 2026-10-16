@@ -5,7 +5,7 @@ import type { LengthUnit, FractionDenominator } from '../core/units';
 import { makeTransform, type EdgeInsets, type ScreenTransform, type RectPx } from '../core/calibration';
 import { lengthUncertainty, pointUncertainty, type ScreenProtector } from '../core/uncertainty';
 import { add, dist, normAngle, rad2deg, scale, snapAngle, sub, type RectMm } from '../core/geometry';
-import { inkFor } from '../core/color';
+import { inkFor, luminance } from '../core/color';
 import type {
   Handle,
   Readout,
@@ -36,6 +36,8 @@ export interface StageSettings {
   haptics: boolean;
   nudgeStep: 'px' | '0.05';
   canvasLabels: boolean;
+  /** Dim everything outside the measured region (§8, like a light box). */
+  spotlight: boolean;
 }
 
 export const DEFAULT_STAGE_SETTINGS: StageSettings = {
@@ -54,6 +56,7 @@ export const DEFAULT_STAGE_SETTINGS: StageSettings = {
   haptics: true,
   nudgeStep: 'px',
   canvasLabels: false,
+  spotlight: true,
 };
 
 export interface UncertaintyModel {
@@ -115,9 +118,12 @@ interface TwistState {
 interface EmptyContact {
   downAt: number;
   pos: Vec;
+  downMm: Vec;
   moved: boolean;
   group: number | null;
   consumed?: boolean;
+  /** Side(s) of the selected tool this touch would drive from the dimmed surround. */
+  indirect?: Handle | null;
 }
 
 const TWO_FINGER_HOLD_MS = 600;
@@ -601,7 +607,17 @@ export class Stage {
             group = c.group;
           }
         }
-        this.empty.set(e.pointerId, { downAt: performance.now(), pos: css, moved: false, group });
+        const sel = this.selected();
+        const indirect =
+          this.settings.shield !== 'strict' && !this.locked ? (sel?.indirect?.(mm) ?? null) : null;
+        this.empty.set(e.pointerId, {
+          downAt: performance.now(),
+          pos: css,
+          downMm: mm,
+          moved: false,
+          group,
+          indirect,
+        });
         this.armTwoFingerHold();
         break;
       }
@@ -660,7 +676,7 @@ export class Stage {
       longPress: null,
       before: hit.tool ? JSON.stringify(hit.tool.serialize()) : '',
     };
-    if (hit.tool && hit.handle.kind !== 'body') {
+    if (hit.tool && hit.handle.kind !== 'body' && !hit.handle.id.startsWith('ind')) {
       this.drag.longPress = window.setTimeout(() => this.fireLongPress(), LONG_PRESS_MS);
       this.lastHandle = { toolId: hit.tool.id, handle: hit.handle };
     } else if (hit.tool) {
@@ -744,6 +760,24 @@ export class Stage {
       return;
     }
     const c = this.empty.get(e.pointerId);
+    // A single finger moving in the dimmed surround drives the nearest side (indirect drag).
+    const sel = this.selected();
+    if (
+      c &&
+      c.indirect &&
+      sel &&
+      !c.consumed &&
+      !this.drag &&
+      this.empty.size === 1 &&
+      dist(c.pos, css) > 6
+    ) {
+      this.empty.delete(e.pointerId);
+      if (this.holdTimer) clearTimeout(this.holdTimer);
+      this.holdTimer = null;
+      this.startDrag(e, { tool: sel, handle: c.indirect }, c.downMm, c.pos);
+      this.onMove(e);
+      return;
+    }
     if (c && dist(c.pos, css) > 10) {
       c.moved = true;
       if (this.holdTimer) clearTimeout(this.holdTimer);
@@ -916,6 +950,31 @@ export class Stage {
       });
   }
 
+  /** Dim everything outside the selected tool's measured region. */
+  private drawSpotlight(rc: RenderContext, area: RectMm): void {
+    if (!this.settings.spotlight) return;
+    const polys = this.selected()?.spotlight?.();
+    if (!polys || polys.length === 0) return;
+    const { ctx } = rc;
+    const m = 50;
+    const a = rc.mmToPx([area.x - m, area.y - m]);
+    const b = rc.mmToPx([area.x + area.w + m, area.y + area.h + m]);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(a[0], a[1], b[0] - a[0], b[1] - a[1]);
+    for (const poly of polys) {
+      poly.forEach((p, i) => {
+        const q = rc.mmToPx(p);
+        if (i === 0) ctx.moveTo(q[0], q[1]);
+        else ctx.lineTo(q[0], q[1]);
+      });
+      ctx.closePath();
+    }
+    ctx.fillStyle = luminance(rc.theme.bg) > 0.3 ? 'rgba(10,14,22,0.62)' : 'rgba(255,255,255,0.2)';
+    ctx.fill('evenodd');
+    ctx.restore();
+  }
+
   private drawEdges(rc: RenderContext): void {
     if (!this.showEdges || !this.usableCss) return;
     const { ctx } = rc;
@@ -959,6 +1018,7 @@ export class Stage {
       { x: focus[0] - span, y: focus[1] - span, w: 2 * span, h: 2 * span },
       this.settings.background,
     );
+    this.drawSpotlight(rc, { x: focus[0] - span, y: focus[1] - span, w: 2 * span, h: 2 * span });
     this.drawTools(rc);
     this.overlay?.(rc);
     // Crosshair with a gap at the centre so it never hides the edge.
@@ -1028,6 +1088,7 @@ export class Stage {
     const theme = this.theme();
     const rc = this.makeRc(theme);
     drawBackground(rc, this.canvasAreaMm(), this.settings.background);
+    this.drawSpotlight(rc, this.canvasAreaMm());
     this.drawEdges(rc);
     this.drawTools(rc);
     this.overlay?.(rc);

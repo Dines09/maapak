@@ -173,3 +173,18 @@ describe('angle uncertainty', () => {
     expect(angleUncertaintyDeg(u, [40, 40])).toBeLessThan(1);
   });
 });
+
+import { clipPolygonToRect } from '../../src/core/geometry/fit';
+describe('polygon clipping', () => {
+  it('clips a long strip to the screen rectangle', () => {
+    const strip: Vec[] = [
+      [10, -1000],
+      [30, -1000],
+      [30, 1000],
+      [10, 1000],
+    ];
+    const c = clipPolygonToRect(strip, { x: 0, y: 0, w: 60, h: 100 });
+    expect(polygonArea(c)).toBeCloseTo(20 * 100, 6);
+    expect(clipPolygonToRect(strip, { x: 40, y: 0, w: 10, h: 10 })).toHaveLength(0);
+  });
+});

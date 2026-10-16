@@ -12,14 +12,14 @@ export async function skipOnboarding(page: Page): Promise<void> {
 /** CSS position of a ruler marker knob ('a' | 'b') on the first tool. */
 export async function knobPos(page: Page, id: 'a' | 'b'): Promise<{ x: number; y: number }> {
   return page.evaluate((id) => {
-    type T = { s: Record<string, number>; Q(t: number, o: number): [number, number]; knobOff(): number };
+    type T = { grips(k: string): [number, number][] };
     const st = (
       window as unknown as {
         __maapak: { tools: T[]; getTransform(): { mmToCssPx(p: [number, number]): [number, number] } };
       }
     ).__maapak;
     const tool = st.tools[0];
-    const [x, y] = st.getTransform().mmToCssPx(tool.Q(tool.s[id], tool.knobOff()));
+    const [x, y] = st.getTransform().mmToCssPx(tool.grips(id)[0]);
     return { x, y };
   }, id);
 }

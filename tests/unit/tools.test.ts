@@ -38,7 +38,7 @@ function env(over: Partial<ToolEnv> = {}): ToolEnv {
 function ruler(kind: 'ruler' | 'leapfrog' = 'ruler', e = env()): RulerTool {
   const r = new RulerTool(defaultRulerState(kind));
   r.attach(e);
-  r.fit(e.bounds());
+  r.fit();
   return r;
 }
 
@@ -49,102 +49,92 @@ function drag(t: RulerTool | GapRulerTool, id: string, from: Vec, to: Vec): void
   t.onDragEnd(h);
 }
 
-describe('ruler tool', () => {
-  it('places itself inside the usable area', () => {
-    const r = ruler();
-    const b = env().bounds();
-    for (const p of r.outline()) {
-      expect(p[0]).toBeGreaterThanOrEqual(b.x - 1e-9);
-      expect(p[0]).toBeLessThanOrEqual(b.x + b.w + 1e-9);
-      expect(p[1]).toBeGreaterThanOrEqual(b.y - 1e-9);
-    }
-  });
-  it('reads the distance between the markers', () => {
+describe('ruler (two measuring lines)', () => {
+  it('reads the distance between the lines', () => {
     const r = ruler();
     r.s.a = 10;
     r.s.b = 10;
-    drag(r, 'b', [0, 0], [42.3, 0]);
+    drag(r, 'b', [0, 0], [42.3, 7]); // perpendicular part ignored
     const [ro] = r.readouts();
     expect(ro.value).toBeCloseTo(42.3, 12);
-    expect(ro.kind).toBe('length');
     expect(ro.uncertainty).toBeGreaterThan(0);
   });
-  it('marker motion follows the ruler direction only', () => {
+  it('keeps the region between the lines bright (spotlight clipped to the screen)', () => {
     const r = ruler();
     r.s.a = 10;
-    r.s.b = 20;
-    drag(r, 'b', [0, 0], [5, 30]); // perpendicular component ignored
-    expect(r.readouts()[0].value).toBeCloseTo(15, 12);
+    r.s.b = 40;
+    const [poly] = r.spotlight()!;
+    const xs = poly.map((p) => p[0]);
+    expect(Math.min(...xs)).toBeCloseTo(2 + 10, 9);
+    expect(Math.max(...xs)).toBeCloseTo(2 + 40, 9);
   });
-  it('has no drift: scale origin, zero and length are untouched after 1,000 marker drags', () => {
+  it('drag in the dimmed area moves the nearer line; inside the bright region is protected', () => {
     const r = ruler();
-    const before = JSON.stringify({ o: r.s.origin, z: r.s.zero, L: r.s.length, ang: r.s.angle });
+    r.s.a = 10;
+    r.s.b = 40;
+    const y = 70;
+    expect(r.indirect([2 + 25, y])).toBeNull();
+    const left = r.indirect([2 + 3, y])!;
+    expect(left.id).toBe('ind:a');
+    drag(r, left.id, [5, y], [8, y]);
+    expect(r.s.a).toBeCloseTo(13, 12);
+    expect(r.indirect([2 + 55, y])!.id).toBe('ind:b');
+  });
+  it('lines never leave the usable area', () => {
+    const r = ruler();
+    drag(r, 'b', [0, 0], [500, 0]);
+    expect(r.P(r.s.b)[0]).toBeLessThanOrEqual(2 + 64);
+  });
+  it('has no drift after 1,000 drags and a drag back returns exactly', () => {
+    const r = ruler();
     const a0 = r.s.a;
+    const h = { id: 'a', kind: 'edge' as const, posMm: [0, 0] as Vec };
     let seed = 7;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
-    for (let i = 0; i < 1000; i++) {
-      const id = i % 2 ? 'a' : 'b';
-      drag(r, id, [0, 0], [rnd() * 20, rnd() * 5]);
-    }
-    expect(JSON.stringify({ o: r.s.origin, z: r.s.zero, L: r.s.length, ang: r.s.angle })).toBe(before);
-    // A drag and its exact reverse inside one gesture returns to the same position.
-    const h = { id: 'a', kind: 'edge' as const, posMm: [0, 0] as Vec };
-    r.s.a = a0;
     r.onDragStart(h, [0, 0]);
     for (let i = 0; i < 1000; i++) r.onDragMove(h, [rnd() * 10, 0], false);
     r.onDragMove(h, [0, 0], false);
     r.onDragEnd(h);
     expect(r.s.a).toBe(a0);
   });
-  it('clamps extension to the usable area', () => {
-    const r = ruler();
-    const h = { id: 'end', kind: 'point' as const, posMm: [0, 0] as Vec };
-    r.onDragStart(h, [0, 0]);
-    r.onDragMove(h, [500, 0], false);
-    r.onDragEnd(h);
-    const b = env().bounds();
-    expect(r.P(r.s.length)[0]).toBeLessThanOrEqual(b.x + b.w + 1e-9);
-  });
-  it('snaps markers to ticks when enabled', () => {
+  it('snaps the distance to ticks when enabled', () => {
     const r = ruler('ruler', env({ tickSnapMm: () => 1 }));
-    r.s.a = 0;
-    r.s.b = 10;
+    r.s.a = 10;
+    r.s.b = 20;
     drag(r, 'b', [0, 0], [2.2, 0]);
-    expect(r.s.b).toBe(12);
+    expect(r.s.b - r.s.a).toBe(12);
   });
-  it('both ends extend in any direction; direction snaps to 90°; markers stay on the part', () => {
+  it('rotate 90° measures the other axis; flip swaps the zero line', () => {
     const r = ruler();
-    const A = r.P(0);
-    const B = r.P(r.s.length);
-    const h = { id: 'end', kind: 'point' as const, posMm: B };
-    r.onDragStart(h, B);
-    r.onDragMove(h, [A[0] + 0.6, A[1] + 50], false); // almost straight down
-    r.onDragEnd(h);
-    expect(r.s.angle).toBe(90);
-    expect(r.P(0)[0]).toBeCloseTo(A[0], 12);
-    expect(r.P(0)[1]).toBeCloseTo(A[1], 12);
-    // Now pull the start end upwards: the ruler grows the other way.
-    const L1 = r.s.length;
-    const s = { id: 'start', kind: 'point' as const, posMm: A };
-    r.onDragStart(s, A);
-    r.onDragMove(s, [A[0], A[1] - 20], false);
-    r.onDragEnd(s);
-    expect(r.s.length).toBeCloseTo(L1 + 20, 6);
-    expect(r.s.angle).toBe(90);
+    r.actions()
+      .find((a) => a.id === 'rot90')!
+      .run();
+    expect(Math.abs(r.s.angle)).toBe(90);
+    const [a, b] = [r.s.a, r.s.b];
+    r.actions()
+      .find((a2) => a2.id === 'flip')!
+      .run();
+    expect([r.s.a, r.s.b]).toEqual([b, a]);
   });
-  it('set exact value and zero', () => {
+  it('set exact value', () => {
     const r = ruler();
     r.s.a = 5;
     expect(r.setExactValue('b', 25)).toBe(true);
     expect(r.readouts()[0].value).toBeCloseTo(25, 12);
-    expect(r.setZeroAt('a')).toBe(true);
-    expect(r.s.zero).toBe(5);
     expect(r.setExactValue('b', 9999)).toBe(false);
   });
-  it('leapfrog sums segments and grows uncertainty as √N', () => {
+  it('two fingers place the lines at the fingers', () => {
+    const r = new RulerTool(defaultRulerState('ruler'));
+    r.attach(env());
+    r.placeAt([20, 30], [22, 90], env().bounds());
+    expect(Math.abs(r.s.angle)).toBe(90);
+    expect(r.readouts()[0].value).toBeCloseTo(60, 9);
+  });
+  it('leapfrog opens edge to edge and sums segments with √N uncertainty', () => {
     const r = ruler('leapfrog');
+    expect(r.P(r.s.a)[0]).toBeCloseTo(2 + 1.5, 9);
+    expect(r.P(r.s.b)[0]).toBeCloseTo(66 - 1.5, 9);
     r.s.a = 4;
-    r.s.zero = 4;
     r.s.b = 54;
     const one = r.readouts()[0];
     r.mark();
@@ -152,14 +142,15 @@ describe('ruler tool', () => {
     r.mark();
     const four = r.readouts()[0];
     expect(four.value).toBeCloseTo(200, 9);
-    expect(four.uncertainty).toBeGreaterThan(one.uncertainty);
     expect(four.uncertainty).toBeGreaterThanOrEqual(one.uncertainty * 1.5);
+    r.undoMark();
+    expect(r.readouts()[0].value).toBeCloseTo(150, 9);
   });
-  it('round-trips through the registry', () => {
+  it('round-trips through the registry; old v1 states are rejected', () => {
     const r = ruler('leapfrog');
     const copy = TOOL_REGISTRY.leapfrog!.deserialize(r.serialize());
     expect(copy.serialize()).toEqual(r.serialize());
-    expect(() => TOOL_REGISTRY.ruler!.deserialize({})).toThrow();
+    expect(() => TOOL_REGISTRY.ruler!.deserialize({ v: 1, origin: [0, 0], length: 1 })).toThrow();
   });
 });
 

@@ -41,7 +41,7 @@ import type { Handle, Readout, ToolInstance } from '../../render/types';
 import type { BackgroundSpec } from '../../render/background';
 import { TOOL_REGISTRY, createTool, QUICK_SHAPES, type QuickShape } from '../../tools/registry';
 import { RulerTool } from '../../tools/ruler/RulerTool';
-import { GapRulerTool, defaultGapState } from '../../tools/gapRuler/GapRulerTool';
+import { defaultRulerState } from '../../tools/ruler/RulerTool';
 import { useSettings } from '../../state/settings';
 import { useEnv } from '../../state/env';
 import { resolveScale, useCalibration } from '../../state/calibration';
@@ -65,7 +65,6 @@ type DockId = ToolId | 'shapes' | 'more';
 const DOCK: { id: DockId; labelKey: string }[] = [
   { id: 'ruler', labelKey: 'tool.ruler' },
   { id: 'box', labelKey: 'tool.box' },
-  { id: 'gapRuler', labelKey: 'tool.gapRuler' },
   { id: 'leapfrog', labelKey: 'tool.leapfrog' },
   { id: 'caliper', labelKey: 'tool.caliperShort' },
   { id: 'protractor', labelKey: 'tool.protractorShort' },
@@ -213,11 +212,11 @@ export function MeasureScreen() {
       .catch(() => {});
   };
 
-  /** Two fingers held on empty glass → gap rulers exactly at the two fingers. */
+  /** Two fingers held on empty glass → two measuring lines exactly at the two fingers. */
   const twoFingerGap = (a: Vec, b: Vec) => {
     const st = stageRef.current;
     if (!st) return;
-    const g = new GapRulerTool(defaultGapState(1));
+    const g = new RulerTool(defaultRulerState('ruler', 1));
     g.placeAt(a, b, st.boundsMm());
     st.clearTools();
     st.addTool(g);
@@ -279,6 +278,7 @@ export function MeasureScreen() {
       haptics: settings.haptics,
       nudgeStep: settings.nudgeStep,
       canvasLabels: settings.canvasLabels,
+      spotlight: settings.spotlight,
     });
   }, [settings]);
 
@@ -304,7 +304,8 @@ export function MeasureScreen() {
     const rail = railRef.current?.getBoundingClientRect();
     const side = rail && !focus ? rail.width + 8 : 0;
     stageRef.current?.setPlacementInsets(
-      focus ? 0 : (topRef.current?.getBoundingClientRect().bottom ?? 0) + 6,
+      // Clear of the top bar and the reading pill under it.
+      focus ? 0 : (topRef.current?.getBoundingClientRect().bottom ?? 0) + 50,
       focus
         ? 0
         : window.innerHeight - (bottomRef.current?.getBoundingClientRect().top ?? window.innerHeight) + 6,
@@ -474,6 +475,7 @@ export function MeasureScreen() {
 
   const st = stageRef.current;
   const toolActions = sel?.actions?.() ?? [];
+  const presets = sel?.presets?.() ?? [];
   const leap = sel instanceof RulerTool && sel.tool === 'leapfrog' ? sel : null;
   const units: { value: LengthUnit; label: string }[] = [
     { value: 'mm', label: 'mm' },
@@ -669,6 +671,23 @@ export function MeasureScreen() {
         className={cx('absolute inset-x-0 z-20 flex flex-col items-center gap-1 transition-opacity', fade)}
         style={{ bottom: focus ? 8 : (bottomRef.current?.offsetHeight ?? 60) + 6 }}
       >
+        {presets.length > 0 && !leap && (
+          <div className="chrome flex gap-1 rounded-2xl p-1 shadow-xl" data-testid="presets">
+            {presets.map((p) => (
+              <button
+                key={p.id}
+                data-testid={`preset-${p.id}`}
+                onClick={() => runAction(p.run)}
+                className={cx(
+                  'tabular h-10 min-w-11 rounded-xl px-2 text-sm font-bold',
+                  p.active ? 'bg-sky-500 text-white' : 'bg-white/10 text-slate-100',
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
         {leap && (
           <LeapBar
             tool={leap}

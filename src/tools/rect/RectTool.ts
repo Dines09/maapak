@@ -131,6 +131,21 @@ export class RectTool extends BaseTool implements ToolInstance {
     }
   }
 
+  spotlight(): Vec[][] {
+    return [this.shape()];
+  }
+
+  /** 9-zone drive from the dimmed area: side, or corner when diagonal. */
+  indirect(p: Vec): Handle | null {
+    const [t, o] = toLocal(this.s.c, this.s.angle, p);
+    const hw = this.s.w / 2;
+    const hh = this.s.h / 2;
+    const x = t > hw ? 'e' : t < -hw ? 'w' : '';
+    const y = o > hh ? 'n' : o < -hh ? 's' : '';
+    if (!x && !y) return null;
+    return { id: `ind:${y}${x}`, kind: 'point', posMm: p };
+  }
+
   rotateBy(deg: number, pivot: Vec): void {
     this.s.c = rotateAbout(this.s.c, pivot, deg);
     this.s.angle = normAngle(this.s.angle + deg);
@@ -190,7 +205,7 @@ export class RectTool extends BaseTool implements ToolInstance {
     const n = frameN(s0.angle);
     const du = dot(delta, u);
     const dn = dot(delta, n);
-    const id = h.id;
+    const id = h.id.replace('ind:', '');
     if (EDGES[id] || CORNERS[id]) {
       const [sx, sy] = EDGES[id] ?? CORNERS[id];
       let dw = sx * du;

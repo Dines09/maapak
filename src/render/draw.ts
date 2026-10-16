@@ -160,7 +160,7 @@ function labelStride(rc: RenderContext, spec: ScaleSpec): number {
   return px >= need ? 1 : Math.ceil(need / px);
 }
 
-/** Round knob for a handle. */
+/** Handle grip: small, neutral, with a coloured centre dot for identity; filled with the accent when active. */
 export function drawKnob(
   rc: RenderContext,
   atMm: Vec,
@@ -169,33 +169,28 @@ export function drawKnob(
 ): void {
   const { ctx } = rc;
   const p = rc.mmToPx(atMm);
-  const r = (rc.largeHandles ? 15 : 11) * rc.dpr * (opts.active ? 1.15 : 1);
+  const r = (rc.largeHandles ? 12 : 8.5) * rc.dpr * (opts.active ? 1.2 : 1);
   ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.35)';
+  ctx.shadowBlur = 4 * rc.dpr;
   ctx.beginPath();
   ctx.arc(p[0], p[1], r, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = opts.active ? color : '#f8fafc';
   ctx.fill();
-  ctx.globalAlpha = 1;
-  ctx.lineWidth = 2 * rc.dpr;
-  ctx.strokeStyle = opts.ring ?? '#ffffff';
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = 1.2 * rc.dpr;
+  ctx.strokeStyle = opts.ring ?? 'rgba(15,23,42,0.75)';
   ctx.stroke();
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = '#ffffff';
+  const ink = opts.active ? '#ffffff' : '#0f172a';
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = opts.active ? '#ffffff' : color;
   if (opts.glyph === 'rotate') {
-    ctx.lineWidth = 1.6 * rc.dpr;
+    ctx.lineWidth = 1.3 * rc.dpr;
     ctx.beginPath();
-    ctx.arc(p[0], p[1], r * 0.5, -Math.PI * 0.9, Math.PI * 0.55);
+    ctx.arc(p[0], p[1], r * 0.48, -Math.PI * 0.9, Math.PI * 0.55);
     ctx.stroke();
-    const ex = p[0] + r * 0.5 * Math.cos(Math.PI * 0.55);
-    const ey = p[1] + r * 0.5 * Math.sin(Math.PI * 0.55);
-    ctx.beginPath();
-    ctx.moveTo(ex - r * 0.25, ey + r * 0.05);
-    ctx.lineTo(ex + r * 0.12, ey - r * 0.25);
-    ctx.lineTo(ex + r * 0.22, ey + r * 0.2);
-    ctx.fill();
   } else if (opts.glyph === 'extend') {
-    ctx.lineWidth = 1.6 * rc.dpr;
+    ctx.lineWidth = 1.3 * rc.dpr;
     ctx.beginPath();
     ctx.moveTo(p[0] - r * 0.5, p[1]);
     ctx.lineTo(p[0] + r * 0.5, p[1]);
@@ -208,7 +203,7 @@ export function drawKnob(
     ctx.stroke();
   } else {
     ctx.beginPath();
-    ctx.arc(p[0], p[1], r * 0.22, 0, Math.PI * 2);
+    ctx.arc(p[0], p[1], r * 0.38, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
@@ -228,9 +223,10 @@ export function drawMarkerLine(rc: RenderContext, a: Vec, _mid: Vec, b: Vec, col
   const fix = (p: Vec): Vec => (vert ? [crisp(p[0], 1), p[1]] : horiz ? [p[0], crisp(p[1], 1)] : p);
   ctx.save();
   ctx.lineCap = 'butt';
+  // Solid ink line (max contrast with the background) with a 1-device-px coloured core.
   ctx.strokeStyle = rc.theme.ink;
-  ctx.globalAlpha = rc.inLoupe ? 0.35 : 0.95;
-  ctx.lineWidth = (rc.inLoupe ? 1.4 : 2.4) * rc.dpr;
+  ctx.globalAlpha = rc.inLoupe ? 0.3 : 0.9;
+  ctx.lineWidth = (rc.inLoupe ? 1.4 : 2) * rc.dpr;
   ctx.beginPath();
   line(ctx, pa, pb);
   ctx.stroke();
